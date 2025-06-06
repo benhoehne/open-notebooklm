@@ -3,8 +3,11 @@ constants.py
 """
 
 import os
-
+from dotenv import load_dotenv
 from pathlib import Path
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Key constants
 APP_TITLE = "Open NotebookLM 🎙️"
@@ -21,11 +24,43 @@ ERROR_MESSAGE_NOT_SUPPORTED_IN_MELO_TTS = "The selected language is not supporte
 ERROR_MESSAGE_READING_PDF = "Error reading the PDF file"
 ERROR_MESSAGE_TOO_LONG = "The total content is too long. Please ensure the combined text from PDFs and URL is fewer than {CHARACTER_LIMIT} characters."
 
-# Fireworks API-related constants
-FIREWORKS_API_KEY = os.getenv("FIREWORKS_API_KEY")
-FIREWORKS_MAX_TOKENS = 16_384
-FIREWORKS_MODEL_ID = "accounts/fireworks/models/llama-v3p3-70b-instruct"
-FIREWORKS_TEMPERATURE = 0.1
+# Google Gemini API-related constants
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+GEMINI_MAX_TOKENS = 65536
+GEMINI_MODEL_ID = "gemini-2.5-flash-preview-05-20"
+GEMINI_TEMPERATURE = 0.1
+
+# Google Cloud Text-to-Speech API-related constants
+GOOGLE_CLOUD_API_KEY = os.getenv("GOOGLE_CLOUD_API_KEY")
+GOOGLE_TTS_RETRY_ATTEMPTS = 3
+GOOGLE_TTS_RETRY_DELAY = 5  # in seconds
+
+# Voice configuration for different speakers using Chirp HD voices
+# Chirp HD voices are the latest generation powered by LLMs, perfect for conversational applications
+GOOGLE_TTS_VOICES = {
+    "Host (Jane)": {
+        "English": "en-US-Chirp-HD-F",    # Female Chirp HD voice
+        "Spanish": "es-ES-Chirp-HD-F",    # Female Chirp HD voice
+        "French": "fr-FR-Chirp-HD-F",     # Female Chirp HD voice
+        "German": "de-DE-Chirp-HD-F",     # Female Chirp HD voice
+        "Italian": "it-IT-Chirp-HD-F",    # Female Chirp HD voice
+        "Portuguese": "pt-BR-Chirp-HD-F", # Female Chirp HD voice
+        "Japanese": "ja-JP-Chirp-HD-F",   # Female Chirp HD voice
+        "Korean": "ko-KR-Chirp-HD-F",     # Female Chirp HD voice
+        "Chinese": "zh-CN-Chirp-HD-F",    # Female Chirp HD voice
+    },
+    "Guest": {
+        "English": "en-US-Chirp-HD-D",    # Male Chirp HD voice
+        "Spanish": "es-ES-Chirp-HD-D",    # Male Chirp HD voice
+        "French": "fr-FR-Chirp-HD-D",     # Male Chirp HD voice
+        "German": "de-DE-Chirp-HD-D",     # Male Chirp HD voice
+        "Italian": "it-IT-Chirp-HD-D",    # Male Chirp HD voice
+        "Portuguese": "pt-BR-Chirp-HD-D", # Male Chirp HD voice
+        "Japanese": "ja-JP-Chirp-HD-D",   # Male Chirp HD voice
+        "Korean": "ko-KR-Chirp-HD-D",     # Male Chirp HD voice
+        "Chinese": "zh-CN-Chirp-HD-D",    # Male Chirp HD voice
+    }
+}
 
 # MeloTTS
 MELO_API_NAME = "/synthesize"
@@ -78,10 +113,10 @@ UI_DESCRIPTION = """
 Generate Podcasts from PDFs using open-source AI.
 
 Built with:
-- [Llama 3.3 70B 🦙](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) via [Fireworks AI 🎆](https://fireworks.ai/) and [Instructor 📐](https://github.com/instructor-ai/instructor) 
-- [MeloTTS 🐚](https://huggingface.co/myshell-ai/MeloTTS-English)
-- [Bark 🐶](https://huggingface.co/suno/bark)
-- [Jina Reader 🔍](https://jina.ai/reader/)
+- [Google Gemini Flash 🤖](https://ai.google.dev/gemini-api) for dialogue generation
+- [Google Cloud Text-to-Speech 🎙️](https://cloud.google.com/text-to-speech) for high-quality voice synthesis
+- [Bark 🐶](https://huggingface.co/suno/bark) for advanced audio generation (experimental)
+- [Jina Reader 🔍](https://jina.ai/reader/) for web content extraction
 
 **Note:** Only the text is processed (100k character limits).
 """
@@ -116,8 +151,8 @@ UI_INPUTS = {
         "value": "English",
     },
     "advanced_audio": {
-        "label": "7. 🔄 Use advanced audio generation? (Experimental)",
-        "value": True,
+        "label": "7. 🔄 Use experimental Bark audio? (Slower, only if Google TTS unavailable)",
+        "value": False,
     },
 }
 UI_OUTPUTS = {
@@ -137,7 +172,7 @@ UI_EXAMPLES = [
         "Fun",
         "Short (1-2 min)",
         "English",
-        True,
+        False,
     ],
     [
         [],

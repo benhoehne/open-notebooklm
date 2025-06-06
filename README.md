@@ -18,7 +18,7 @@ short_description: Personalised Podcasts For All - Available in 13 Languages
 This project is inspired by the NotebookLM tool, and implements it with open-source LLMs and text-to-speech models. This tool processes the content of a PDF, generates a natural dialogue suitable for an audio podcast, and outputs it as an MP3 file.
 
 Built with:
-- [Llama 3.3 70B 🦙](https://huggingface.co/meta-llama/Llama-3.3-70B-Instruct) via [Fireworks AI 🎆](https://fireworks.ai/) and [Instructor 📐](https://github.com/instructor-ai/instructor) 
+- [Google Gemini Flash 🤖](https://ai.google.dev/gemini-api) and [Instructor 📐](https://github.com/instructor-ai/instructor) 
 - [MeloTTS 🐚](https://huggingface.co/myshell-ai/MeloTTS-English)
 - [Bark 🐶](https://huggingface.co/suno/bark)
 - [Jina Reader 🔍](https://jina.ai/reader/)
@@ -41,7 +41,7 @@ To set up the project, follow these steps:
 
 2. **Create a virtual environment and activate it:**
    ```bash
-   python -m venv .venv
+   python3 -m venv .venv
    source .venv/bin/activate
    ```
 
@@ -53,7 +53,13 @@ To set up the project, follow these steps:
 ## Usage
 
 1. **Set up API Key(s):**
-   For this project, I am using LLama 3.3 70B hosted on Fireworks API as its JSON Mode supports passing a pydantic object. So, please set the API key as the `FIREWORKS_API_KEY` environment variable
+   For this project, we are using Google Gemini Flash with the new Google Gen AI SDK which supports structured output with pydantic objects. 
+   
+   - Get your API key from [Google AI Studio](https://aistudio.google.com/app/apikey)
+   - Create a `.env` file in the project root and add: `GEMINI_API_KEY=your_api_key_here` (or `GOOGLE_API_KEY=your_api_key_here`)
+   - Or set the environment variable: `export GEMINI_API_KEY=your_api_key_here` (or `export GOOGLE_API_KEY=your_api_key_here`)
+   
+   **Important:** We're using the new [Google Gen AI SDK](https://ai.google.dev/gemini-api/docs/libraries) (`google-genai`) which is the recommended library for accessing Gemini models. This new SDK provides structured output support with pydantic models and access to new features like multi-modal outputs.
 
 2. **Run the application:**
    ```bash
