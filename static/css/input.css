@@ -1,9 +1,24 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 /* Import Inter font */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-inter: 'Inter', system-ui, sans-serif;
+  --color-gradient-start: #667eea;
+  --color-gradient-end: #764ba2;
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-slide-up: slideUp 0.3s ease-out;
+  
+  @keyframes fadeIn {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+  }
+  
+  @keyframes slideUp {
+    0% { transform: translateY(10px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+}
 
 /* Custom component classes */
 @layer components {
