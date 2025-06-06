@@ -1,0 +1,37 @@
+{
+  "name": "open-notebooklm",
+  "version": "1.0.0",
+  "description": "--- title: Open NotebookLM emoji: 🎙️ colorFrom: purple colorTo: red sdk: gradio sdk_version: 5.0.1 app_file: app.py pinned: true header: mini short_description: Personalised Podcasts For All - Available in 13 Languages ---",
+  "main": "index.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "build-css": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch",
+    "build-css-prod": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css --minify",
+    "dev": "concurrently --names \"CSS,APP\" --prefix-colors \"cyan,green\" \"clear\" \"kill -9 $(lsof -ti :7000);\" \"npm run build-css\" \"python flask_app.py\"",
+    "start": "npm run build-css-prod && echo 'CSS built! Now run: python flask_app.py'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/benhoehne/open-notebooklm.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/benhoehne/open-notebooklm/issues"
+  },
+  "homepage": "https://github.com/benhoehne/open-notebooklm#readme",
+  "devDependencies": {
+    "@tailwindcss/cli": "^4.1.8",
+    "@tailwindcss/forms": "^0.5.9",
+    "@tailwindcss/typography": "^0.5.15",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^3.4.17",
+    "concurrently": "^9.1.2"
+  }
+}

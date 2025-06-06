@@ -1,0 +1,57 @@
+<div class="max-w-4xl mx-auto mt-12">
+  <div class="border-b border-white/10 pb-12">
+    <h2 class="text-base/7 font-semibold text-white">🎧 Your Podcast</h2>
+    <p class="mt-1 text-sm/6 text-gray-400">Generated podcast audio and transcript will appear here once processing is complete.</p>
+    
+    <div class="mt-10 space-y-8">
+      
+      <!-- Audio Output -->
+      <div>
+        <label class="block text-sm/6 font-medium text-white mb-3">🔊 Generated Audio</label>
+        <div class="rounded-lg bg-white/5 border border-white/10 p-6">
+          {% if audio_file %}
+          <audio controls class="w-full">
+            <source src="{{ url_for('static', filename='audio/' + audio_file) }}" type="audio/mpeg">
+            Your browser does not support the audio element.
+          </audio>
+          <div class="mt-4 text-center">
+            <a href="{{ url_for('static', filename='audio/' + audio_file) }}" download class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+              <svg class="mr-2 -ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              Download Audio
+            </a>
+          </div>
+          {% else %}
+          <div class="text-center text-gray-400 py-8">
+            <svg class="mx-auto size-12 text-gray-500 mb-4 w-12 h-12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path d="M8.25 4.5a3.75 3.75 0 1 1 7.5 0v8.25a3.75 3.75 0 1 1-7.5 0V4.5ZM6 10.5a.75.75 0 0 1 .75.75v1.5a5.25 5.25 0 1 0 10.5 0v-1.5a.75.75 0 0 1 1.5 0v1.5a6.751 6.751 0 0 1-6 6.709v2.291h3a.75.75 0 0 1 0 1.5h-7.5a.75.75 0 0 1 0-1.5h3v-2.291A6.751 6.751 0 0 1 5.25 12.75v-1.5A.75.75 0 0 1 6 10.5Z" />
+            </svg>
+            <p class="text-sm">Your podcast audio will appear here</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Transcript Output -->
+      <div>
+        <label class="block text-sm/6 font-medium text-white mb-3">📜 Transcript</label>
+        <div class="rounded-lg bg-white/5 border border-white/10 p-6">
+          {% if transcript %}
+          <div class="prose prose-invert max-w-none">
+            <pre class="whitespace-pre-wrap text-gray-300 text-sm leading-relaxed">{{ transcript }}</pre>
+          </div>
+          {% else %}
+          <div class="text-center text-gray-400 py-8">
+            <svg class="mx-auto size-12 text-gray-500 mb-4 w-12 h-12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+              <path fill-rule="evenodd" d="M4.125 3C3.089 3 2.25 3.84 2.25 4.875V18a3 3 0 0 0 3 3h15a3 3 0 0 1-3-3V4.875C17.25 3.839 16.41 3 15.375 3H4.125ZM12 9.75a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H12Zm-.75-2.25a.75.75 0 0 1 .75-.75h1.5a.75.75 0 0 1 0 1.5H12a.75.75 0 0 1-.75-.75ZM6 12.75a.75.75 0 0 0 0 1.5h7.5a.75.75 0 0 0 0-1.5H6Zm-.75 3.75a.75.75 0 0 1 .75-.75h7.5a.75.75 0 0 1 0 1.5H6a.75.75 0 0 1-.75-.75ZM6 6.75a.75.75 0 0 0-.75.75v3c0 .414.336.75.75.75h3a.75.75 0 0 0 .75-.75v-3A.75.75 0 0 0 9 6.75H6Z" clip-rule="evenodd" />
+            </svg>
+            <p class="text-sm">Your podcast transcript will appear here</p>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div> 

@@ -3,6 +3,15 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Generated CSS
+static/css/output.css
+
 # C extensions
 *.so
 
@@ -161,5 +170,15 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-gradio_cached_examples/
+# Flask-specific
+uploads/
+static/audio/
+logs/
+*.mp3
+*.log
+
+# OS files
 .DS_Store
+
+# Already included above but keeping for clarity
+node_modules/

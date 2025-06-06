@@ -1,33 +1,27 @@
----
-title: Open NotebookLM
-emoji: 🎙️
-colorFrom: purple
-colorTo: red
-sdk: gradio
-sdk_version: 5.0.1
-app_file: app.py
-pinned: true
-header: mini
-short_description: Personalised Podcasts For All - Available in 13 Languages
----
-
 # Open NotebookLM
 
 ## Overview
 
-This project is inspired by the NotebookLM tool, and implements it with open-source LLMs and text-to-speech models. This tool processes the content of a PDF, generates a natural dialogue suitable for an audio podcast, and outputs it as an MP3 file.
+This project is inspired by the NotebookLM tool, and implements it with open-source LLMs and text-to-speech models. This tool processes the content of PDFs and web pages, generates a natural dialogue suitable for an audio podcast, and outputs it as an MP3 file.
 
 Built with:
 - [Google Gemini Flash 🤖](https://ai.google.dev/gemini-api) and [Instructor 📐](https://github.com/instructor-ai/instructor) 
-- [MeloTTS 🐚](https://huggingface.co/myshell-ai/MeloTTS-English)
-- [Bark 🐶](https://huggingface.co/suno/bark)
+- [Google Cloud Text-to-Speech 🎙️](https://cloud.google.com/text-to-speech) with Chirp HD voices
+- [MeloTTS 🐚](https://huggingface.co/myshell-ai/MeloTTS-English) (fallback)
+- [Bark 🐶](https://huggingface.co/suno/bark) (experimental)
 - [Jina Reader 🔍](https://jina.ai/reader/)
+- [Flask 🌐](https://flask.palletsprojects.com/) for the web interface
+- [Tailwind CSS 🎨](https://tailwindcss.com/) for styling
 
 ## Features
 
-- **Convert PDF to Podcast:** Upload a PDF and convert its content into a podcast dialogue.
-- **Engaging Dialogue:** The generated dialogue is designed to be informative and entertaining.
-- **User-friendly Interface:** Simple interface using Gradio for easy interaction.
+- **Convert PDF to Podcast:** Upload multiple PDFs and convert their content into a podcast dialogue
+- **Web Content Support:** Extract content from URLs to include in podcasts
+- **Multiple Languages:** Support for 13 languages including English, Spanish, French, German, and more
+- **Customizable Settings:** Choose tone (Fun, Formal, Educational), length, and language
+- **High-Quality Audio:** Uses Google Cloud TTS with Chirp HD voices for natural-sounding speech
+- **Professional Web Interface:** Clean, responsive Flask-based UI with Tailwind CSS styling
+- **File Management:** Secure file upload handling and audio download capabilities
 
 ## Installation
 
@@ -63,15 +57,21 @@ To set up the project, follow these steps:
 
 2. **Run the application:**
    ```bash
-   python app.py
+   # Option 1: Use the convenience script
+   ./run_flask.sh
+   
+   # Option 2: Manual steps
+   npm run build-css-prod
+   python flask_app.py
    ```
-   This will launch a Gradio interface in your web browser.
+   This will launch a Flask web server at `http://127.0.0.1:5000`.
 
-3. **Upload a PDF:**
-   Upload the PDF document you want to convert into a podcast.
-
-4. **Generate Audio:**
-   Click the button to start the conversion process. The output will be an MP3 file containing the podcast dialogue.
+3. **Use the Application:**
+   - Upload PDF documents or provide a website URL
+   - Optionally specify a question or topic to focus on
+   - Choose your preferred tone, length, and language
+   - Click "Generate Podcast" to start the conversion process
+   - Download the generated MP3 file and view the transcript
 
 ## Acknowledgements
 

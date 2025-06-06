@@ -37,30 +37,65 @@ GOOGLE_TTS_RETRY_DELAY = 5  # in seconds
 
 # Voice configuration for different speakers using Chirp HD voices
 # Chirp HD voices are the latest generation powered by LLMs, perfect for conversational applications
-GOOGLE_TTS_VOICES = {
-    "Host (Jane)": {
-        "English": "en-US-Chirp-HD-F",    # Female Chirp HD voice
-        "Spanish": "es-ES-Chirp-HD-F",    # Female Chirp HD voice
-        "French": "fr-FR-Chirp-HD-F",     # Female Chirp HD voice
-        "German": "de-DE-Chirp-HD-F",     # Female Chirp HD voice
-        "Italian": "it-IT-Chirp-HD-F",    # Female Chirp HD voice
-        "Portuguese": "pt-BR-Chirp-HD-F", # Female Chirp HD voice
-        "Japanese": "ja-JP-Chirp-HD-F",   # Female Chirp HD voice
-        "Korean": "ko-KR-Chirp-HD-F",     # Female Chirp HD voice
-        "Chinese": "zh-CN-Chirp-HD-F",    # Female Chirp HD voice
-    },
-    "Guest": {
-        "English": "en-US-Chirp-HD-D",    # Male Chirp HD voice
-        "Spanish": "es-ES-Chirp-HD-D",    # Male Chirp HD voice
-        "French": "fr-FR-Chirp-HD-D",     # Male Chirp HD voice
-        "German": "de-DE-Chirp-HD-D",     # Male Chirp HD voice
-        "Italian": "it-IT-Chirp-HD-D",    # Male Chirp HD voice
-        "Portuguese": "pt-BR-Chirp-HD-D", # Male Chirp HD voice
-        "Japanese": "ja-JP-Chirp-HD-D",   # Male Chirp HD voice
-        "Korean": "ko-KR-Chirp-HD-D",     # Male Chirp HD voice
-        "Chinese": "zh-CN-Chirp-HD-D",    # Male Chirp HD voice
-    }
+
+# Base voice mappings by gender and language
+FEMALE_VOICES = {
+    "English": "en-US-Chirp-HD-F",
+    "Spanish": "es-ES-Chirp-HD-F", 
+    "French": "fr-FR-Chirp-HD-F",
+    "German": "de-DE-Chirp-HD-F",
+    "Italian": "it-IT-Chirp-HD-F",
+    "Portuguese": "pt-BR-Chirp-HD-F",
+    "Dutch": "nl-NL-Chirp-HD-F",
+    "Polish": "pl-PL-Chirp-HD-F",
+    "Russian": "ru-RU-Chirp-HD-F",
+    "Japanese": "ja-JP-Chirp-HD-F",
+    "Korean": "ko-KR-Chirp-HD-F",
+    "Chinese": "zh-CN-Chirp-HD-F",
+    "Hindi": "hi-IN-Chirp-HD-F",
+    "Turkish": "tr-TR-Chirp-HD-F",
 }
+
+MALE_VOICES = {
+    "English": "en-US-Chirp-HD-D",
+    "Spanish": "es-ES-Chirp-HD-D",
+    "French": "fr-FR-Chirp-HD-D", 
+    "German": "de-DE-Chirp-HD-D",
+    "Italian": "it-IT-Chirp-HD-D",
+    "Portuguese": "pt-BR-Chirp-HD-D",
+    "Dutch": "nl-NL-Chirp-HD-D",
+    "Polish": "pl-PL-Chirp-HD-D",
+    "Russian": "ru-RU-Chirp-HD-D",
+    "Japanese": "ja-JP-Chirp-HD-D",
+    "Korean": "ko-KR-Chirp-HD-D",
+    "Chinese": "zh-CN-Chirp-HD-D",
+    "Hindi": "hi-IN-Chirp-HD-D",
+    "Turkish": "tr-TR-Chirp-HD-D",
+}
+
+def get_voice_assignments():
+    """
+    Randomly assign genders to host and guest roles for variety.
+    This ensures we always have one male and one female voice, but the roles are mixed up.
+    """
+    import random
+    
+    # Randomly decide if host should be female (True) or male (False)
+    host_is_female = random.choice([True, False])
+    
+    if host_is_female:
+        return {
+            "Host (Sam)": FEMALE_VOICES,
+            "Guest": MALE_VOICES,
+        }
+    else:
+        return {
+            "Host (Sam)": MALE_VOICES,
+            "Guest": FEMALE_VOICES,
+        }
+
+# Legacy variable for backwards compatibility - will be dynamically assigned
+GOOGLE_TTS_VOICES = get_voice_assignments()
 
 # MeloTTS
 MELO_API_NAME = "/synthesize"
@@ -137,12 +172,12 @@ UI_INPUTS = {
     },
     "tone": {
         "label": "4. 🎭 Choose the tone",
-        "choices": ["Fun", "Formal"],
+        "choices": ["Fun", "Formal", "Educational"],
         "value": "Fun",
     },
     "length": {
         "label": "5. ⏱️ Choose the length",
-        "choices": ["Short (1-2 min)", "Medium (3-5 min)"],
+        "choices": ["Short (1-2 min)", "Medium (3-5 min)", "Long (10-12 min)"],
         "value": "Medium (3-5 min)",
     },
     "language": {
@@ -193,5 +228,5 @@ UI_EXAMPLES = [
         False,
     ],
 ]
-UI_CACHE_EXAMPLES = True
+UI_CACHE_EXAMPLES = False
 UI_SHOW_API = True

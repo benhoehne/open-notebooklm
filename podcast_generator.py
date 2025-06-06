@@ -1,5 +1,5 @@
 """
-main.py
+Podcast generation module containing the core logic for generating podcasts from content.
 """
 
 # Standard library imports
@@ -9,17 +9,15 @@ import time
 from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List, Tuple, Optional
+import random
 
 # Third-party imports
-import gradio as gr
-import random
 from loguru import logger
 from pypdf import PdfReader
 from pydub import AudioSegment
 
 # Local imports
 from constants import (
-    APP_TITLE,
     CHARACTER_LIMIT,
     ERROR_MESSAGE_NOT_PDF,
     ERROR_MESSAGE_NO_INPUT,
@@ -31,15 +29,8 @@ from constants import (
     MELO_TTS_LANGUAGE_MAPPING,
     NOT_SUPPORTED_IN_MELO_TTS,
     SUNO_LANGUAGE_MAPPING,
-    UI_ALLOW_FLAGGING,
-    UI_API_NAME,
-    UI_CACHE_EXAMPLES,
-    UI_CONCURRENCY_LIMIT,
-    UI_DESCRIPTION,
-    UI_EXAMPLES,
-    UI_INPUTS,
-    UI_OUTPUTS,
-    UI_SHOW_API,
+    get_voice_assignments,
+    GOOGLE_CLOUD_API_KEY,
 )
 from prompts import (
     LANGUAGE_MODIFIER,
@@ -48,7 +39,7 @@ from prompts import (
     SYSTEM_PROMPT,
     TONE_MODIFIER,
 )
-from schema import ShortDialogue, MediumDialogue
+from schema import ShortDialogue, MediumDialogue, LongDialogue
 from utils import generate_podcast_audio, generate_script, parse_url
 
 
@@ -66,27 +57,33 @@ def generate_podcast(
     text = ""
 
     # Choose random number from 0 to 8
-    random_voice_number = random.randint(0, 8) # this is for suno model
+    random_voice_number = random.randint(0, 8)  # this is for suno model
+    
+    # Get fresh voice assignments for this podcast (randomizes host/guest genders)
+    voice_assignments = get_voice_assignments()
+    logger.info(f"Voice assignments for this podcast: Host={'Female' if 'HD-F' in list(voice_assignments['Host (Sam)'].values())[0] else 'Male'}, Guest={'Female' if 'HD-F' in list(voice_assignments['Guest'].values())[0] else 'Male'}")
 
-    if not use_advanced_audio and language in NOT_SUPPORTED_IN_MELO_TTS:
-        raise gr.Error(ERROR_MESSAGE_NOT_SUPPORTED_IN_MELO_TTS)
+    # Only check language support if Google Cloud TTS is not available and advanced audio is not enabled
+    # Google Cloud TTS supports many more languages than MeloTTS
+    if not GOOGLE_CLOUD_API_KEY and not use_advanced_audio and language in NOT_SUPPORTED_IN_MELO_TTS:
+        raise ValueError(ERROR_MESSAGE_NOT_SUPPORTED_IN_MELO_TTS)
 
     # Check if at least one input is provided
     if not files and not url:
-        raise gr.Error(ERROR_MESSAGE_NO_INPUT)
+        raise ValueError(ERROR_MESSAGE_NO_INPUT)
 
     # Process PDFs if any
     if files:
         for file in files:
             if not file.lower().endswith(".pdf"):
-                raise gr.Error(ERROR_MESSAGE_NOT_PDF)
+                raise ValueError(ERROR_MESSAGE_NOT_PDF)
 
             try:
                 with Path(file).open("rb") as f:
                     reader = PdfReader(f)
                     text += "\n\n".join([page.extract_text() for page in reader.pages])
             except Exception as e:
-                raise gr.Error(f"{ERROR_MESSAGE_READING_PDF}: {str(e)}")
+                raise ValueError(f"{ERROR_MESSAGE_READING_PDF}: {str(e)}")
 
     # Process URL if provided
     if url:
@@ -94,11 +91,11 @@ def generate_podcast(
             url_text = parse_url(url)
             text += "\n\n" + url_text
         except ValueError as e:
-            raise gr.Error(str(e))
+            raise ValueError(str(e))
 
     # Check total character count
     if len(text) > CHARACTER_LIMIT:
-        raise gr.Error(ERROR_MESSAGE_TOO_LONG)
+        raise ValueError(ERROR_MESSAGE_TOO_LONG)
 
     # Modify the system prompt based on the user input
     modified_system_prompt = SYSTEM_PROMPT
@@ -115,8 +112,10 @@ def generate_podcast(
     # Call the LLM
     if length == "Short (1-2 min)":
         llm_output = generate_script(modified_system_prompt, text, ShortDialogue)
-    else:
+    elif length == "Medium (3-5 min)":
         llm_output = generate_script(modified_system_prompt, text, MediumDialogue)
+    else:  # Long (10-12 min)
+        llm_output = generate_script(modified_system_prompt, text, LongDialogue)
 
     logger.info(f"Generated dialogue: {llm_output}")
 
@@ -127,21 +126,28 @@ def generate_podcast(
 
     for line in llm_output.dialogue:
         logger.info(f"Generating audio for {line.speaker}: {line.text}")
-        if line.speaker == "Host (Jane)":
+        if line.speaker == "Host (Sam)":
             speaker = f"**Host**: {line.text}"
         else:
             speaker = f"**{llm_output.name_of_guest}**: {line.text}"
         transcript += speaker + "\n\n"
         total_characters += len(line.text)
 
-        language_for_tts = SUNO_LANGUAGE_MAPPING[language]
-
-        if not use_advanced_audio:
-            language_for_tts = MELO_TTS_LANGUAGE_MAPPING[language_for_tts]
+        # Handle language parameter based on TTS engine availability
+        if GOOGLE_CLOUD_API_KEY:
+            # Google TTS expects full language names (e.g., "German")
+            language_for_tts = language
+        elif use_advanced_audio:
+            # Bark expects language codes (e.g., "de")
+            language_for_tts = SUNO_LANGUAGE_MAPPING[language]
+        else:
+            # MeloTTS expects specific language codes (e.g., "DE")
+            language_code = SUNO_LANGUAGE_MAPPING[language]
+            language_for_tts = MELO_TTS_LANGUAGE_MAPPING[language_code]
 
         # Get audio file path
         audio_file_path = generate_podcast_audio(
-            line.text, line.speaker, language_for_tts, use_advanced_audio, random_voice_number
+            line.text, line.speaker, language_for_tts, use_advanced_audio, random_voice_number, voice_assignments
         )
         # Read the audio file into an AudioSegment
         audio_segment = AudioSegment.from_file(audio_file_path)
@@ -171,57 +177,4 @@ def generate_podcast(
 
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temporary_file.name, transcript
-
-
-demo = gr.Interface(
-    title=APP_TITLE,
-    description=UI_DESCRIPTION,
-    fn=generate_podcast,
-    inputs=[
-        gr.File(
-            label=UI_INPUTS["file_upload"]["label"],  # Step 1: File upload
-            file_types=UI_INPUTS["file_upload"]["file_types"],
-            file_count=UI_INPUTS["file_upload"]["file_count"],
-        ),
-        gr.Textbox(
-            label=UI_INPUTS["url"]["label"],  # Step 2: URL
-            placeholder=UI_INPUTS["url"]["placeholder"],
-        ),
-        gr.Textbox(label=UI_INPUTS["question"]["label"]),  # Step 3: Question
-        gr.Dropdown(
-            label=UI_INPUTS["tone"]["label"],  # Step 4: Tone
-            choices=UI_INPUTS["tone"]["choices"],
-            value=UI_INPUTS["tone"]["value"],
-        ),
-        gr.Dropdown(
-            label=UI_INPUTS["length"]["label"],  # Step 5: Length
-            choices=UI_INPUTS["length"]["choices"],
-            value=UI_INPUTS["length"]["value"],
-        ),
-        gr.Dropdown(
-            choices=UI_INPUTS["language"]["choices"],  # Step 6: Language
-            value=UI_INPUTS["language"]["value"],
-            label=UI_INPUTS["language"]["label"],
-        ),
-        gr.Checkbox(
-            label=UI_INPUTS["advanced_audio"]["label"],
-            value=UI_INPUTS["advanced_audio"]["value"],
-        ),
-    ],
-    outputs=[
-        gr.Audio(
-            label=UI_OUTPUTS["audio"]["label"], format=UI_OUTPUTS["audio"]["format"]
-        ),
-        gr.Markdown(label=UI_OUTPUTS["transcript"]["label"]),
-    ],
-    allow_flagging=UI_ALLOW_FLAGGING,
-    api_name=UI_API_NAME,
-    theme=gr.themes.Ocean(),
-    concurrency_limit=UI_CONCURRENCY_LIMIT,
-    examples=UI_EXAMPLES,
-    cache_examples=UI_CACHE_EXAMPLES,
-)
-
-if __name__ == "__main__":
-    demo.launch(show_api=UI_SHOW_API)
+    return temporary_file.name, transcript 

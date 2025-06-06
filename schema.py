@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 class DialogueItem(BaseModel):
     """A single dialogue item."""
 
-    speaker: Literal["Host (Jane)", "Guest"]
+    speaker: Literal["Host (Sam)", "Guest"]
     text: str
 
 
@@ -31,4 +31,14 @@ class MediumDialogue(BaseModel):
     name_of_guest: str
     dialogue: List[DialogueItem] = Field(
         ..., description="A list of dialogue items, typically between 19 to 29 items"
+    )
+
+
+class LongDialogue(BaseModel):
+    """The dialogue between the host and guest for long-form content."""
+
+    scratchpad: str
+    name_of_guest: str
+    dialogue: List[DialogueItem] = Field(
+        ..., description="A list of dialogue items, typically between 70 to 100 items for comprehensive coverage"
     )

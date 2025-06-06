@@ -135,12 +135,12 @@ def parse_url(url: str) -> str:
 
 
 def generate_podcast_audio(
-    text: str, speaker: str, language: str, use_advanced_audio: bool, random_voice_number: int
+    text: str, speaker: str, language: str, use_advanced_audio: bool, random_voice_number: int, voice_assignments: dict = None
 ) -> str:
     """Generate audio for podcast using TTS or advanced audio models."""
     # Prioritize Google Cloud TTS if available (best quality)
     if google_tts_client:
-        return _use_google_tts(text, speaker, language)
+        return _use_google_tts(text, speaker, language, voice_assignments)
     elif use_advanced_audio:
         # Fallback to Bark if Google TTS not available but advanced audio requested
         return _use_suno_model(text, speaker, language, random_voice_number)
@@ -149,16 +149,19 @@ def generate_podcast_audio(
         return _use_melotts_api(text, speaker, language)
 
 
-def _use_google_tts(text: str, speaker: str, language: str) -> str:
+def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: dict = None) -> str:
     """Generate audio using Google Cloud Text-to-Speech with Chirp HD voices."""
     if not google_tts_client:
         raise ValueError("Google Cloud TTS client not initialized. Please set GOOGLE_CLOUD_API_KEY environment variable.")
     
+    # Use provided voice assignments or fallback to the default
+    voices_to_use = voice_assignments if voice_assignments else GOOGLE_TTS_VOICES
+    
     # Get the appropriate Chirp HD voice for the speaker and language
-    voice_name = GOOGLE_TTS_VOICES.get(speaker, {}).get(language)
+    voice_name = voices_to_use.get(speaker, {}).get(language)
     if not voice_name:
         # Fallback to English if language not supported
-        voice_name = GOOGLE_TTS_VOICES.get(speaker, {}).get("English", "en-US-Chirp-HD-F")
+        voice_name = voices_to_use.get(speaker, {}).get("English", "en-US-Chirp-HD-F")
     
     # Extract language code from voice name (e.g., "en-US" from "en-US-Chirp-HD-F")
     language_code = '-'.join(voice_name.split('-')[:2])
@@ -212,7 +215,7 @@ def _use_suno_model(text: str, speaker: str, language: str, random_voice_number:
     guest_voice_num = str(random_voice_number + 1)
     audio_array = generate_audio(
         text,
-        history_prompt=f"v2/{language}_speaker_{host_voice_num if speaker == 'Host (Jane)' else guest_voice_num}",
+        history_prompt=f"v2/{language}_speaker_{host_voice_num if speaker == 'Host (Sam)' else guest_voice_num}",
     )
     file_path = f"audio_{language}_{speaker}.mp3"
     write_wav(file_path, SAMPLE_RATE, audio_array)
