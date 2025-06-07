@@ -9,8 +9,8 @@
   "scripts": {
     "build-css": "tailwindcss -i ./static/css/input.css -o ./static/css/output.css --watch",
     "build-css-prod": "tailwindcss -i ./static/css/input.css -o ./static/css/output.min.css --minify",
-    "dev": "concurrently --names \"CSS,APP\" --prefix-colors \"cyan,green\" \"clear\" \"kill -9 $(lsof -ti :7000);\" \"npm run build-css\" \"python flask_app.py\"",
-    "start": "npm run build-css-prod && echo 'CSS built! Now run: python flask_app.py'",
+    "dev": "concurrently --names \"CSS,APP\" --prefix-colors \"cyan,green\" \"clear\" \"kill -9 $(lsof -ti :7000);\" \"npm run build-css\" \"flask run --debug\"",
+    "start": "npm run build-css-prod && echo 'CSS built! Now run: python app.py'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

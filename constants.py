@@ -20,7 +20,7 @@ GRADIO_CLEAR_CACHE_OLDER_THAN = 1 * 24 * 60 * 60  # 1 day
 # Error messages-related constants
 ERROR_MESSAGE_NO_INPUT = "Please provide at least one PDF file or a URL."
 ERROR_MESSAGE_NOT_PDF = "The provided file is not a PDF. Please upload only PDF files."
-ERROR_MESSAGE_NOT_SUPPORTED_IN_MELO_TTS = "The selected language is not supported without advanced audio generation. Please enable advanced audio generation or choose a supported language."
+
 ERROR_MESSAGE_READING_PDF = "Error reading the PDF file"
 ERROR_MESSAGE_TOO_LONG = "The total content is too long. Please ensure the combined text from PDFs and URL is fewer than {CHARACTER_LIMIT} characters."
 
@@ -94,48 +94,45 @@ def get_voice_assignments():
             "Guest": FEMALE_VOICES,
         }
 
+def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str = "random"):
+    """
+    Assign genders to host and guest roles based on user preferences.
+    
+    Args:
+        host_gender: "male", "female", or "random"
+        guest_gender: "male", "female", or "random" 
+    """
+    import random
+    
+    # Handle host gender
+    if host_gender == "male":
+        host_voices = MALE_VOICES
+    elif host_gender == "female":
+        host_voices = FEMALE_VOICES
+    else:  # random
+        host_voices = random.choice([MALE_VOICES, FEMALE_VOICES])
+    
+    # Handle guest gender  
+    if guest_gender == "male":
+        guest_voices = MALE_VOICES
+    elif guest_gender == "female":
+        guest_voices = FEMALE_VOICES
+    else:  # random
+        guest_voices = random.choice([MALE_VOICES, FEMALE_VOICES])
+    
+    return {
+        "Host (Sam)": host_voices,
+        "Guest": guest_voices,
+    }
+
 # Legacy variable for backwards compatibility - will be dynamically assigned
 GOOGLE_TTS_VOICES = get_voice_assignments()
 
-# MeloTTS
-MELO_API_NAME = "/synthesize"
-MELO_TTS_SPACES_ID = "mrfakename/MeloTTS"
-MELO_RETRY_ATTEMPTS = 3
-MELO_RETRY_DELAY = 5  # in seconds
-
-MELO_TTS_LANGUAGE_MAPPING = {
-    "en": "EN",
-    "es": "ES",
-    "fr": "FR",
-    "zh": "ZJ",
-    "ja": "JP",
-    "ko": "KR",
-}
-
-
-# Suno related constants
-SUNO_LANGUAGE_MAPPING = {
-    "English": "en",
-    "Chinese": "zh",
-    "French": "fr",
-    "German": "de",
-    "Hindi": "hi",
-    "Italian": "it",
-    "Japanese": "ja",
-    "Korean": "ko",
-    "Polish": "pl",
-    "Portuguese": "pt",
-    "Russian": "ru",
-    "Spanish": "es",
-    "Turkish": "tr",
-}
-
-# General audio-related constants
-NOT_SUPPORTED_IN_MELO_TTS = list(
-    set(SUNO_LANGUAGE_MAPPING.values()) - set(MELO_TTS_LANGUAGE_MAPPING.keys())
-)
-NOT_SUPPORTED_IN_MELO_TTS = [
-    key for key, id in SUNO_LANGUAGE_MAPPING.items() if id in NOT_SUPPORTED_IN_MELO_TTS
+# Supported languages for Google Cloud TTS
+SUPPORTED_LANGUAGES = [
+    "English", "Spanish", "French", "German", "Italian", "Portuguese", 
+    "Dutch", "Polish", "Russian", "Japanese", "Korean", "Chinese", 
+    "Hindi", "Turkish"
 ]
 
 # Jina Reader-related constants
@@ -145,17 +142,16 @@ JINA_RETRY_DELAY = 5  # in seconds
 
 # UI-related constants
 UI_DESCRIPTION = """
-Generate Podcasts from PDFs using open-source AI.
+Generate Podcasts from PDFs using AI.
 
 Built with:
 - [Google Gemini Flash 🤖](https://ai.google.dev/gemini-api) for dialogue generation
 - [Google Cloud Text-to-Speech 🎙️](https://cloud.google.com/text-to-speech) for high-quality voice synthesis
-- [Bark 🐶](https://huggingface.co/suno/bark) for advanced audio generation (experimental)
 - [Jina Reader 🔍](https://jina.ai/reader/) for web content extraction
 
 **Note:** Only the text is processed (100k character limits).
 """
-UI_AVAILABLE_LANGUAGES = list(set(SUNO_LANGUAGE_MAPPING.keys()))
+UI_AVAILABLE_LANGUAGES = SUPPORTED_LANGUAGES
 UI_INPUTS = {
     "file_upload": {
         "label": "1. 📄 Upload your PDF(s)",
@@ -185,10 +181,7 @@ UI_INPUTS = {
         "choices": UI_AVAILABLE_LANGUAGES,
         "value": "English",
     },
-    "advanced_audio": {
-        "label": "7. 🔄 Use experimental Bark audio? (Slower, only if Google TTS unavailable)",
-        "value": False,
-    },
+
 }
 UI_OUTPUTS = {
     "audio": {"label": "🔊 Podcast", "format": "mp3"},
@@ -207,7 +200,6 @@ UI_EXAMPLES = [
         "Fun",
         "Short (1-2 min)",
         "English",
-        False,
     ],
     [
         [],
@@ -216,7 +208,6 @@ UI_EXAMPLES = [
         "Fun",
         "Short (1-2 min)",
         "English",
-        False,
     ],
     [
         [],
@@ -225,7 +216,6 @@ UI_EXAMPLES = [
         "Fun",
         "Short (1-2 min)",
         "English",
-        False,
     ],
 ]
 UI_CACHE_EXAMPLES = False

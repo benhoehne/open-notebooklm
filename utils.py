@@ -5,10 +5,8 @@ Functions:
 - generate_script: Get the dialogue from the LLM.
 - call_llm: Call the LLM with the given prompt and dialogue format.
 - parse_url: Parse the given URL and return the text content.
-- generate_podcast_audio: Generate audio for podcast using TTS or advanced audio models.
-- _use_suno_model: Generate advanced audio using Bark.
-- _use_melotts_api: Generate audio using TTS model.
-- _get_melo_tts_params: Get TTS parameters based on speaker and language.
+- generate_podcast_audio: Generate audio for podcast using Google Cloud Text-to-Speech.
+- _use_google_tts: Generate audio using Google Cloud TTS with Chirp HD voices.
 """
 
 # Standard library imports
@@ -16,14 +14,9 @@ import time
 from typing import Any, Union
 
 # Third-party imports
-import instructor
 import requests
-from bark import SAMPLE_RATE, generate_audio, preload_models
 import google.genai as genai
-from google.genai import types
 from google.cloud import texttospeech
-from gradio_client import Client
-from scipy.io.wavfile import write as write_wav
 
 # Local imports
 from constants import (
@@ -35,10 +28,6 @@ from constants import (
     GOOGLE_TTS_VOICES,
     GOOGLE_TTS_RETRY_ATTEMPTS,
     GOOGLE_TTS_RETRY_DELAY,
-    MELO_API_NAME,
-    MELO_TTS_SPACES_ID,
-    MELO_RETRY_ATTEMPTS,
-    MELO_RETRY_DELAY,
     JINA_READER_URL,
     JINA_RETRY_ATTEMPTS,
     JINA_RETRY_DELAY,
@@ -58,11 +47,6 @@ if GOOGLE_CLOUD_API_KEY:
     google_tts_client = texttospeech.TextToSpeechClient(
         client_options={"api_key": GOOGLE_CLOUD_API_KEY}
     )
-
-# Initialize Hugging Face client
-hf_client = Client(MELO_TTS_SPACES_ID)
-
-# Bark models will be loaded on demand
 
 
 def generate_script(
@@ -135,18 +119,13 @@ def parse_url(url: str) -> str:
 
 
 def generate_podcast_audio(
-    text: str, speaker: str, language: str, use_advanced_audio: bool, random_voice_number: int, voice_assignments: dict = None
+    text: str, speaker: str, language: str, voice_assignments: dict = None
 ) -> str:
-    """Generate audio for podcast using TTS or advanced audio models."""
-    # Prioritize Google Cloud TTS if available (best quality)
-    if google_tts_client:
-        return _use_google_tts(text, speaker, language, voice_assignments)
-    elif use_advanced_audio:
-        # Fallback to Bark if Google TTS not available but advanced audio requested
-        return _use_suno_model(text, speaker, language, random_voice_number)
-    else:
-        # Final fallback to MeloTTS
-        return _use_melotts_api(text, speaker, language)
+    """Generate audio for podcast using Google Cloud Text-to-Speech."""
+    if not google_tts_client:
+        raise ValueError("Google Cloud TTS client not initialized. Please set GOOGLE_CLOUD_API_KEY environment variable.")
+    
+    return _use_google_tts(text, speaker, language, voice_assignments)
 
 
 def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: dict = None) -> str:
@@ -206,50 +185,4 @@ def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: d
             time.sleep(GOOGLE_TTS_RETRY_DELAY)
 
 
-def _use_suno_model(text: str, speaker: str, language: str, random_voice_number: int) -> str:
-    """Generate advanced audio using Bark."""
-    # Load models on demand
-    preload_models()
-    
-    host_voice_num = str(random_voice_number)
-    guest_voice_num = str(random_voice_number + 1)
-    audio_array = generate_audio(
-        text,
-        history_prompt=f"v2/{language}_speaker_{host_voice_num if speaker == 'Host (Sam)' else guest_voice_num}",
-    )
-    file_path = f"audio_{language}_{speaker}.mp3"
-    write_wav(file_path, SAMPLE_RATE, audio_array)
-    return file_path
 
-
-def _use_melotts_api(text: str, speaker: str, language: str) -> str:
-    """Generate audio using TTS model."""
-    accent, speed = _get_melo_tts_params(speaker, language)
-
-    for attempt in range(MELO_RETRY_ATTEMPTS):
-        try:
-            return hf_client.predict(
-                text=text,
-                language=language,
-                speaker=accent,
-                speed=speed,
-                api_name=MELO_API_NAME,
-            )
-        except Exception as e:
-            if attempt == MELO_RETRY_ATTEMPTS - 1:  # Last attempt
-                raise  # Re-raise the last exception if all attempts fail
-            time.sleep(MELO_RETRY_DELAY)  # Wait for X second before retrying
-
-
-def _get_melo_tts_params(speaker: str, language: str) -> tuple[str, float]:
-    """Get TTS parameters based on speaker and language."""
-    if speaker == "Guest":
-        accent = "EN-US" if language == "EN" else language
-        speed = 0.9
-    else:  # host
-        accent = "EN-Default" if language == "EN" else language
-        speed = (
-            1.1 if language != "EN" else 1
-        )  # if the language is not English, try speeding up so it'll sound different from the host
-        # for non-English, there is only one voice
-    return accent, speed

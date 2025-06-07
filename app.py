@@ -4,6 +4,7 @@ Flask application for Open NotebookLM
 
 # Standard library imports
 import os
+import shutil
 import uuid
 import logging
 from pathlib import Path
@@ -13,7 +14,7 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
 # Third-party imports
-from flask import Flask, render_template, request, jsonify, url_for, send_from_directory
+from flask import Flask, render_template, request, send_from_directory
 from loguru import logger
 
 # Import the existing podcast generation function and constants
@@ -23,7 +24,6 @@ from constants import (
     CHARACTER_LIMIT,
     ERROR_MESSAGE_NOT_PDF,
     ERROR_MESSAGE_NO_INPUT,
-    ERROR_MESSAGE_NOT_SUPPORTED_IN_MELO_TTS,
     ERROR_MESSAGE_READING_PDF,
     ERROR_MESSAGE_TOO_LONG,
     UI_EXAMPLES,
@@ -144,11 +144,17 @@ def generate_podcast():
         tone = request.form.get('tone', 'Fun')
         length = request.form.get('length', 'Medium (3-5 min)')
         language = request.form.get('language', 'English')
-        use_advanced_audio = bool(request.form.get('use_advanced_audio'))
+        
+        # Get new parameters for host/guest customization
+        host_name = request.form.get('host_name', 'Sam').strip() or 'Sam'
+        guest_name = request.form.get('guest_name', '').strip()
+        host_gender = request.form.get('host_gender', 'random')
+        guest_gender = request.form.get('guest_gender', 'random')
 
         # Log form data
         app.logger.info(f'Generation parameters: files={len(uploaded_files)}, url={bool(url)}, '
-                       f'tone={tone}, length={length}, language={language}, advanced_audio={use_advanced_audio}')
+                       f'tone={tone}, length={length}, language={language}, '
+                       f'host_name={host_name}, guest_name={guest_name}, host_gender={host_gender}, guest_gender={guest_gender}')
         
         # Validate input
         if not uploaded_files and not url:
@@ -167,7 +173,10 @@ def generate_podcast():
             tone=tone,
             length=length,
             language=language,
-            use_advanced_audio=use_advanced_audio
+            host_name=host_name,
+            guest_name=guest_name,
+            host_gender=host_gender,
+            guest_gender=guest_gender
         )
         app.logger.info('Podcast generation completed successfully')
 
@@ -177,7 +186,6 @@ def generate_podcast():
             final_audio_path = os.path.join(app.config['AUDIO_FOLDER'], audio_filename)
             
             # Copy the file to static folder
-            import shutil
             shutil.move(audio_file_path, final_audio_path)
             app.logger.info(f'Audio file saved: {audio_filename}')
         else:
@@ -223,6 +231,173 @@ def generate_podcast():
         app.logger.error(f'Podcast generation failed after {duration:.2f} seconds')
         
         # Determine error message
+        error_msg = str(e)
+        if "Error" in error_msg:
+            error_msg = error_msg.replace("Error: ", "")
+        
+        return render_template('index.html',
+                             error=error_msg,
+                             title=APP_TITLE,
+                             examples=UI_EXAMPLES)
+
+@app.route('/generate-script', methods=['POST'])
+def generate_script_only():
+    """Generate script without audio synthesis for editing"""
+    start_time = datetime.now()
+    app.logger.info('Script generation request started')
+    
+    try:
+        # Handle file uploads (same as before)
+        uploaded_files = []
+        if 'pdf_files' in request.files:
+            files = request.files.getlist('pdf_files')
+            
+            for file in files:
+                if file and file.filename and allowed_file(file.filename):
+                    filename = secure_filename(file.filename)
+                    unique_filename = f"{uuid.uuid4().hex}_{filename}"
+                    file_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+                    file.save(file_path)
+                    uploaded_files.append(file_path)
+                elif file and file.filename:
+                    return render_template('index.html',
+                                         error="Please upload only PDF files.",
+                                         title=APP_TITLE,
+                                         examples=UI_EXAMPLES)
+
+        # Get form data
+        url = request.form.get('url', '').strip() or None
+        question = request.form.get('question', '').strip() or None
+        tone = request.form.get('tone', 'Fun')
+        length = request.form.get('length', 'Medium (3-5 min)')
+        language = request.form.get('language', 'English')
+        
+        # Get host/guest customization
+        host_name = request.form.get('host_name', 'Sam').strip() or 'Sam'
+        guest_name = request.form.get('guest_name', '').strip()
+        host_gender = request.form.get('host_gender', 'random')
+        guest_gender = request.form.get('guest_gender', 'random')
+        
+        # Validate input
+        if not uploaded_files and not url:
+            return render_template('index.html',
+                                 error=ERROR_MESSAGE_NO_INPUT,
+                                 title=APP_TITLE,
+                                 examples=UI_EXAMPLES)
+
+        # Import the script generation function
+        from podcast_generator import generate_script_only as generate_script_core
+        
+        # Generate script only
+        script, generation_params = generate_script_core(
+            files=uploaded_files,
+            url=url,
+            question=question,
+            tone=tone,
+            length=length,
+            language=language,
+            host_name=host_name,
+            guest_name=guest_name
+        )
+        
+        # Clean up uploaded files
+        for file_path in uploaded_files:
+            try:
+                os.remove(file_path)
+            except OSError as e:
+                app.logger.warning(f'Failed to clean up file {file_path}: {e}')
+
+        # Store generation parameters in session for later use
+        import json
+        generation_params['host_gender'] = host_gender
+        generation_params['guest_gender'] = guest_gender
+        
+        # Render script editor page
+        return render_template('script_editor.html',
+                             script=script,
+                             generation_params=json.dumps(generation_params),
+                             title=APP_TITLE)
+
+    except Exception as e:
+        app.logger.error(f"Error generating script: {str(e)}", exc_info=True)
+        
+        # Clean up uploaded files on error
+        for file_path in uploaded_files:
+            try:
+                os.remove(file_path)
+            except OSError:
+                pass
+        
+        error_msg = str(e)
+        if "Error" in error_msg:
+            error_msg = error_msg.replace("Error: ", "")
+        
+        return render_template('index.html',
+                             error=error_msg,
+                             title=APP_TITLE,
+                             examples=UI_EXAMPLES)
+
+@app.route('/synthesize-audio', methods=['POST'])
+def synthesize_audio():
+    """Synthesize audio from edited script"""
+    start_time = datetime.now()
+    app.logger.info('Audio synthesis request started')
+    
+    try:
+        # Get the edited script and generation parameters
+        edited_script = request.form.get('script', '').strip()
+        generation_params_json = request.form.get('generation_params', '{}')
+        
+        if not edited_script:
+            return render_template('index.html',
+                                 error="No script provided for synthesis.",
+                                 title=APP_TITLE,
+                                 examples=UI_EXAMPLES)
+
+        # Parse generation parameters
+        import json
+        generation_params = json.loads(generation_params_json)
+        
+        # Import the audio synthesis function
+        from podcast_generator import synthesize_audio_from_script
+        
+        # Synthesize audio from edited script
+        audio_file_path, transcript = synthesize_audio_from_script(
+            edited_script,
+            generation_params['language'],
+            generation_params['host_name'],
+            generation_params['guest_name'],
+            generation_params['host_gender'],
+            generation_params['guest_gender']
+        )
+
+        # Move generated audio to static folder
+        if audio_file_path:
+            audio_filename = f"podcast_{uuid.uuid4().hex}.mp3"
+            final_audio_path = os.path.join(app.config['AUDIO_FOLDER'], audio_filename)
+            
+            # Copy the file to static folder
+            shutil.move(audio_file_path, final_audio_path)
+            app.logger.info(f'Audio file saved: {audio_filename}')
+        else:
+            audio_filename = None
+
+        # Log completion time
+        end_time = datetime.now()
+        duration = (end_time - start_time).total_seconds()
+        app.logger.info(f'Audio synthesis completed in {duration:.2f} seconds')
+
+        # Render success page with results
+        return render_template('index.html',
+                             audio_file=audio_filename,
+                             transcript=transcript,
+                             title=APP_TITLE,
+                             examples=UI_EXAMPLES,
+                             success="Podcast synthesized successfully!")
+
+    except Exception as e:
+        app.logger.error(f"Error synthesizing audio: {str(e)}", exc_info=True)
+        
         error_msg = str(e)
         if "Error" in error_msg:
             error_msg = error_msg.replace("Error: ", "")

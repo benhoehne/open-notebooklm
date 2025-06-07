@@ -1,7 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: [
-    "./flask_app.py",
+    "./app.py",
     "./static/**/*.{html,js,css}",
     "./templates/**/*.html",
     "./template_utils.py",

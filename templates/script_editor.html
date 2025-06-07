@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block head %}
+<!-- CodeMirror CSS for markdown editing -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/theme/monokai.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header Section -->
+    <div class="text-center">
+        <h1 class="text-2xl font-bold text-white mb-2">📝 Edit Your Podcast Script</h1>
+        <p class="text-gray-400">Review and edit the generated script before creating your podcast audio.</p>
+    </div>
+
+    <!-- Script Editor Form -->
+    <form id="script-form" method="POST" action="{{ url_for('synthesize_audio') }}" class="space-y-6">
+        <!-- Hidden field to store generation parameters -->
+        <input type="hidden" name="generation_params" value="{{ generation_params }}">
+        
+        <div class="bg-gray-800/50 rounded-lg border border-gray-600/50 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white">Podcast Script</h2>
+                <div class="flex items-center space-x-2 text-sm text-gray-400">
+                    <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                    </svg>
+                    <span>Use **Speaker:** format for each line</span>
+                </div>
+            </div>
+            
+            <!-- Script Editor -->
+            <div class="relative">
+                <textarea id="script-editor" name="script" class="w-full h-96 p-4 bg-gray-900 text-white rounded-lg border border-gray-600 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 font-mono text-sm resize-none" placeholder="Loading script...">{{ script }}</textarea>
+            </div>
+            
+            <!-- Editor Help -->
+            <div class="mt-4 p-4 bg-blue-900/20 border border-blue-500/30 rounded-lg">
+                <h3 class="text-sm font-semibold text-blue-300 mb-2">💡 Editing Tips:</h3>
+                <ul class="text-xs text-blue-200 space-y-1">
+                    <li>• Keep the **Speaker:** format for each dialogue line</li>
+                    <li>• You can edit any speaker's dialogue or add new lines</li>
+                    <li>• Use natural conversational language</li>
+                    <li>• Keep individual lines under 200 characters for best audio quality</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex items-center justify-between">
+            <a href="{{ url_for('index') }}" class="text-sm font-semibold text-gray-400 hover:text-white">
+                ← Back to Form
+            </a>
+            
+            <div class="flex items-center space-x-4">
+                <button type="button" onclick="resetScript()" class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white">
+                    Reset to Original
+                </button>
+                <button type="submit" class="rounded-md bg-indigo-600 px-6 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600">
+                    🎙️ Generate Audio
+                </button>
+            </div>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<!-- CodeMirror JavaScript for markdown editing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/codemirror.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.16/mode/markdown/markdown.min.js"></script>
+
+<script>
+var originalScript = "";
+var editor;
+
+// Initialize CodeMirror editor
+document.addEventListener('DOMContentLoaded', function() {
+    var textarea = document.getElementById('script-editor');
+    
+    // Store the original script content from the textarea
+    originalScript = textarea.value;
+    
+    editor = CodeMirror.fromTextArea(textarea, {
+        mode: 'markdown',
+        theme: 'monokai',
+        lineNumbers: true,
+        lineWrapping: true,
+        extraKeys: {
+            "Ctrl-Enter": function() {
+                document.getElementById('script-form').submit();
+            }
+        }
+    });
+    
+    // Auto-focus the editor
+    editor.focus();
+    
+    // Form submission handler
+    document.getElementById('script-form').addEventListener('submit', function(e) {
+        // Make sure the textarea is updated with CodeMirror content
+        if (editor) {
+            editor.save();
+        }
+        
+        // Show loading
+        if (typeof showLoading === 'function') {
+            showLoading();
+        }
+    });
+});
+
+function resetScript() {
+    if (confirm('Are you sure you want to reset the script to its original version? All changes will be lost.')) {
+        if (editor) {
+            editor.setValue(originalScript);
+        }
+    }
+}
+</script>
+{% endblock %} 
