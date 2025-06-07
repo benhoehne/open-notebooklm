@@ -14,7 +14,6 @@ import random
 # Third-party imports
 from loguru import logger
 from pypdf import PdfReader
-from pydub import AudioSegment
 
 # Local imports
 from constants import (
@@ -41,6 +40,8 @@ from schema import (
     create_short_dialogue_schema, create_medium_dialogue_schema, create_long_dialogue_schema
 )
 from utils import generate_podcast_audio, generate_script, parse_url
+
+from pydub import AudioSegment
 
 
 def generate_podcast(

@@ -1,0 +1,51 @@
+# Git files
+.git
+.gitignore
+
+# Python cache
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env
+pip-log.txt
+pip-delete-this-directory.txt
+.tox
+.coverage
+.coverage.*
+.pytest_cache
+.mypy_cache
+
+# Virtual environment
+venv/
+env/
+
+# Node modules
+node_modules/
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Application specific
+logs/
+uploads/
+instance/
+gradio_cached_examples/
+
+# Environment files
+.env
+env_example.txt
+
+# Documentation
+README.md
+*.md
+LICENSE 
