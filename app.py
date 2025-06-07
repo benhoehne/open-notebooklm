@@ -1,5 +1,5 @@
 """
-Flask application for Open NotebookLM
+Flask application for Pod GPT with Authentication
 """
 
 # Standard library imports
@@ -15,6 +15,7 @@ from datetime import datetime
 
 # Third-party imports
 from flask import Flask, render_template, request, send_from_directory
+from flask_login import LoginManager, login_required
 from loguru import logger
 
 # Import the existing podcast generation function and constants
@@ -29,16 +30,42 @@ from constants import (
     UI_EXAMPLES,
 )
 
+# Import authentication and models
+from models import db, User
+from auth import auth as auth_blueprint
+from main import main as main_blueprint
+
 # Flask app setup
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'notebooklm-flask-secret-key'
 app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['AUDIO_FOLDER'] = 'static/audio'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-size
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # Ensure upload and audio directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
+
+# Initialize extensions
+db.init_app(app)
+
+login_manager = LoginManager()
+login_manager.login_view = 'auth.login'
+login_manager.init_app(app)
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+# Register blueprints
+app.register_blueprint(auth_blueprint)
+app.register_blueprint(main_blueprint)
+
+# Create database tables
+with app.app_context():
+    db.create_all()
 
 # Configure logging
 def setup_logging(app):
@@ -96,15 +123,8 @@ def allowed_script_file(filename):
     """Check if the uploaded file is a valid script file"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'md', 'txt'}
 
-@app.route('/')
-def index():
-    """Main page with the podcast generation form"""
-    app.logger.info('Home page accessed')
-    return render_template('index.html', 
-                         title=APP_TITLE,
-                         examples=UI_EXAMPLES)
-
 @app.route('/generate', methods=['POST'])
+@login_required
 def generate_podcast():
     """Handle podcast generation request"""
     start_time = datetime.now()
@@ -309,6 +329,7 @@ def generate_podcast():
                              examples=UI_EXAMPLES)
 
 @app.route('/generate-script', methods=['POST'])
+@login_required
 def generate_script_only():
     """Generate script without audio synthesis for editing"""
     start_time = datetime.now()
@@ -461,6 +482,7 @@ def generate_script_only():
                              examples=UI_EXAMPLES)
 
 @app.route('/synthesize-audio', methods=['POST'])
+@login_required
 def synthesize_audio():
     """Synthesize audio from edited script"""
     start_time = datetime.now()

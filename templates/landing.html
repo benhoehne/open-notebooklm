@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+
+{% block title %}Pod GPT - AI Podcast Generator{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto text-center">
+    <!-- Hero Section -->
+    <div class="mb-12">
+        <h2 class="text-5xl font-bold text-white mb-6">
+            Welcome to <span class="gradient-text">Pod GPT</span>
+        </h2>
+        <p class="text-xl text-gray-300 mb-8 leading-relaxed max-w-3xl mx-auto">
+            Transform your PDFs and web content into engaging podcasts using cutting-edge AI. 
+            Create professional conversations with Google Gemini Flash and Google Cloud Text-to-Speech.
+        </p>
+    </div>
+
+    <!-- Features Grid -->
+    <div class="grid md:grid-cols-3 gap-8 mb-12">
+        <div class="bg-gray-800 rounded-xl p-6">
+            <div class="w-16 h-16 bg-indigo-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-6a1 1 0 00-1-1H9a1 1 0 00-1 1v6a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-3">PDF Processing</h3>
+            <p class="text-gray-400">Upload PDF documents and let our AI extract key insights for podcast creation.</p>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6">
+            <div class="w-16 h-16 bg-green-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4z"/>
+                    <path d="M5.5 9.643a.75.75 0 00-1.5 0V10c0 3.06 2.29 5.585 5.25 5.954V17.5h-1.5a.75.75 0 000 1.5h4.5a.75.75 0 000-1.5H10.5v-1.546A6.001 6.001 0 0016 10v-.357a.75.75 0 00-1.5 0V10a4.5 4.5 0 01-9 0v-.357z"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-3">AI-Generated Audio</h3>
+            <p class="text-gray-400">High-quality speech synthesis with Google Cloud's Chirp HD voices.</p>
+        </div>
+
+        <div class="bg-gray-800 rounded-xl p-6">
+            <div class="w-16 h-16 bg-purple-600 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <svg class="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 5a2 2 0 012-2h10a2 2 0 012 2v8a2 2 0 01-2 2h-2.22l.123.489.804.804A1 1 0 0113 18H7a1 1 0 01-.707-1.707l.804-.804L7.22 15H5a2 2 0 01-2-2V5zm5.771 7H5V5h10v7H8.771z" clip-rule="evenodd"/>
+                </svg>
+            </div>
+            <h3 class="text-xl font-semibold text-white mb-3">Smart Conversations</h3>
+            <p class="text-gray-400">AI creates natural dialogue between hosts, making content engaging and accessible.</p>
+        </div>
+    </div>
+
+    <!-- Access Notice -->
+    <div class="bg-gray-800 border border-gray-700 rounded-xl p-8 mb-8">
+        <div class="flex items-center justify-center mb-4">
+            <svg class="w-12 h-12 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+            </svg>
+        </div>
+        <h3 class="text-2xl font-semibold text-white mb-4">Access Required</h3>
+        <p class="text-gray-300 mb-6">
+            Pod GPT requires user approval to ensure quality and responsible usage. 
+            Create an account and wait for administrator approval to get started.
+        </p>
+        <div class="flex justify-center space-x-4">
+            <a href="{{ url_for('auth.signup') }}" 
+               class="inline-flex items-center px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition duration-200">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"/>
+                </svg>
+                Request Access
+            </a>
+            <a href="{{ url_for('auth.login') }}" 
+               class="inline-flex items-center px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg transition duration-200">
+                <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                </svg>
+                Sign In
+            </a>
+        </div>
+    </div>
+
+    <!-- Tech Stack -->
+    <div class="text-center">
+        <p class="text-gray-400 mb-4">Powered by</p>
+        <div class="flex justify-center items-center space-x-8 text-gray-500">
+            <span class="font-semibold">Google Gemini Flash</span>
+            <span>•</span>
+            <span class="font-semibold">Google Cloud TTS</span>
+            <span>•</span>
+            <span class="font-semibold">Chirp HD Voices</span>
+        </div>
+    </div>
+</div>
+{% endblock %} 

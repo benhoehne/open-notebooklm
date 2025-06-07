@@ -1,7 +1,7 @@
 {
   "name": "open-notebooklm",
   "version": "1.0.0",
-  "description": "--- title: Open NotebookLM emoji: 🎙️ colorFrom: purple colorTo: red sdk: gradio sdk_version: 5.0.1 app_file: app.py pinned: true header: mini short_description: Personalised Podcasts For All - Available in 13 Languages ---",
+  "description": "--- title: Pod GPT emoji: 🎙️ colorFrom: purple colorTo: red sdk: gradio sdk_version: 5.0.1 app_file: app.py pinned: true header: mini short_description: Personalised Podcasts For All - Available in 13 Languages ---",
   "main": "index.js",
   "directories": {
     "example": "examples"

@@ -1,4 +1,4 @@
-# Open NotebookLM
+# Pod GPT
 
 ## Overview
 
@@ -80,3 +80,6 @@ This project is forked from [`knowsuchagency/pdf-to-podcast`](https://github.com
 ## License
 
 This project is licensed under the Apache 2.0 License. See the [LICENSE](LICENSE) file for more information.
+
+##login info
+https://www.digitalocean.com/community/tutorials/how-to-add-authentication-to-your-app-with-flask-login

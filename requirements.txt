@@ -1,5 +1,7 @@
 # Core Flask application
 flask==3.0.0
+flask-login==0.6.3
+flask-sqlalchemy==3.0.5
 
 # Google AI Services  
 google-genai>=1.0.0

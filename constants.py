@@ -10,7 +10,7 @@ from pathlib import Path
 load_dotenv()
 
 # Key constants
-APP_TITLE = "Open NotebookLM 🎙️"
+APP_TITLE = "Pod GPT 🎙️"
 CHARACTER_LIMIT = 150_000
 
 # Gradio-related constants
