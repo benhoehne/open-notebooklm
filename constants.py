@@ -17,6 +17,9 @@ CHARACTER_LIMIT = 150_000
 GRADIO_CACHE_DIR = "./gradio_cached_examples/tmp/"
 GRADIO_CLEAR_CACHE_OLDER_THAN = 1 * 24 * 60 * 60  # 1 day
 
+# Temporary directory for audio files - ensure it's writable for non-admin users
+TEMP_AUDIO_DIR = "./temp_audio/"
+
 # Error messages-related constants
 ERROR_MESSAGE_NO_INPUT = "Please provide at least one content source: upload PDF files, enter a website URL, or import a script file."
 ERROR_MESSAGE_NOT_PDF = "The provided file is not a PDF. Please upload only PDF files."

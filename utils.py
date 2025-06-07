@@ -12,6 +12,7 @@ Functions:
 # Standard library imports
 import time
 from typing import Any, Union
+import glob
 
 # Third-party imports
 import requests
@@ -31,6 +32,7 @@ from constants import (
     JINA_READER_URL,
     JINA_RETRY_ATTEMPTS,
     JINA_RETRY_DELAY,
+    TEMP_AUDIO_DIR,
 )
 from schema import ShortDialogue, MediumDialogue
 
@@ -171,11 +173,21 @@ def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: d
             # Save the audio to a file
             import tempfile
             import os
+            import uuid
             
-            # Create a temporary file with .mp3 extension
-            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as temp_file:
-                temp_file.write(response.audio_content)
-                temp_file_path = temp_file.name
+            # Ensure our custom temp directory exists and is writable
+            os.makedirs(TEMP_AUDIO_DIR, exist_ok=True)
+            
+            # Create a unique filename to avoid conflicts
+            unique_filename = f"tts_audio_{uuid.uuid4().hex}.mp3"
+            temp_file_path = os.path.join(TEMP_AUDIO_DIR, unique_filename)
+            
+            # Write the audio content directly to the file
+            try:
+                with open(temp_file_path, 'wb') as audio_file:
+                    audio_file.write(response.audio_content)
+            except (PermissionError, OSError) as e:
+                raise Exception(f"Permission denied: Unable to create temporary audio file. Please ensure the application has write permissions to the temporary directory: {e}")
             
             return temp_file_path
             
@@ -183,6 +195,47 @@ def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: d
             if attempt == GOOGLE_TTS_RETRY_ATTEMPTS - 1:  # Last attempt
                 raise Exception(f"Google Cloud TTS failed after {GOOGLE_TTS_RETRY_ATTEMPTS} attempts: {e}")
             time.sleep(GOOGLE_TTS_RETRY_DELAY)
+
+
+def cleanup_temp_audio_files(max_age_hours=24):
+    """Clean up old temporary audio files to prevent disk space issues on Synology."""
+    try:
+        import os
+        import time
+        
+        if not os.path.exists(TEMP_AUDIO_DIR):
+            return
+        
+        current_time = time.time()
+        max_age_seconds = max_age_hours * 3600
+        
+        # Clean up TTS audio files
+        for file_path in glob.glob(os.path.join(TEMP_AUDIO_DIR, "tts_audio_*.mp3")):
+            try:
+                if os.path.isfile(file_path):
+                    file_age = current_time - os.path.getmtime(file_path)
+                    if file_age > max_age_seconds:
+                        os.remove(file_path)
+            except OSError:
+                # If we can't remove the file, just continue
+                continue
+                
+        # Clean up gradio cache directory as well
+        from constants import GRADIO_CACHE_DIR, GRADIO_CLEAR_CACHE_OLDER_THAN
+        
+        if os.path.exists(GRADIO_CACHE_DIR):
+            for file_path in glob.glob(os.path.join(GRADIO_CACHE_DIR, "*.mp3")):
+                try:
+                    if os.path.isfile(file_path):
+                        file_age = current_time - os.path.getmtime(file_path)
+                        if file_age > GRADIO_CLEAR_CACHE_OLDER_THAN:
+                            os.remove(file_path)
+                except OSError:
+                    continue
+                    
+    except Exception:
+        # Don't let cleanup failures affect the main application
+        pass
 
 
 

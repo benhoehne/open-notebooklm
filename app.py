@@ -28,12 +28,15 @@ from constants import (
     ERROR_MESSAGE_READING_PDF,
     ERROR_MESSAGE_TOO_LONG,
     UI_EXAMPLES,
+    TEMP_AUDIO_DIR,
+    GRADIO_CACHE_DIR,
 )
 
 # Import authentication and models
 from models import db, User
 from auth import auth as auth_blueprint
 from main import main as main_blueprint
+from utils import cleanup_temp_audio_files
 
 # Flask app setup
 app = Flask(__name__)
@@ -47,6 +50,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 # Ensure upload and audio directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 os.makedirs(app.config['AUDIO_FOLDER'], exist_ok=True)
+os.makedirs(TEMP_AUDIO_DIR, exist_ok=True)  # Ensure temp audio directory exists
 
 # Initialize extensions
 db.init_app(app)
@@ -129,6 +133,9 @@ def generate_podcast():
     """Handle podcast generation request"""
     start_time = datetime.now()
     app.logger.info('Podcast generation request started')
+    
+    # Clean up old temporary files to prevent disk space issues
+    cleanup_temp_audio_files()
     
     try:
         # Debug: Log all form data and files
@@ -273,9 +280,18 @@ def generate_podcast():
             audio_filename = f"podcast_{uuid.uuid4().hex}.mp3"
             final_audio_path = os.path.join(app.config['AUDIO_FOLDER'], audio_filename)
             
-            # Copy the file to static folder
-            shutil.move(audio_file_path, final_audio_path)
-            app.logger.info(f'Audio file saved: {audio_filename}')
+            # Use a more robust approach for Synology systems
+            try:
+                # Copy the file first, then remove the original
+                shutil.copy2(audio_file_path, final_audio_path)
+                os.remove(audio_file_path)  # Clean up the original temp file
+                app.logger.info(f'Audio file saved: {audio_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move audio file: {e}')
+                # If copy fails, try to serve directly from temp location
+                # Keep the original filename for fallback
+                audio_filename = os.path.basename(audio_file_path)
+                app.logger.warning(f'Serving audio directly from temp location: {audio_filename}')
         else:
             audio_filename = None
             app.logger.warning('No audio file generated')
@@ -294,12 +310,27 @@ def generate_podcast():
         app.logger.info(f'Podcast generation completed in {duration:.2f} seconds')
 
         # Render success page with results
-        return render_template('index.html',
-                             audio_file=audio_filename,
-                             transcript=transcript,
-                             title=APP_TITLE,
-                             examples=UI_EXAMPLES,
-                             success="Podcast generated successfully!")
+        try:
+            return render_template('index.html',
+                                 audio_file=audio_filename,
+                                 transcript=transcript,
+                                 title=APP_TITLE,
+                                 examples=UI_EXAMPLES,
+                                 success="Podcast generated successfully!")
+        except OSError as write_error:
+            # Handle specific write errors that may occur on Synology systems
+            app.logger.error(f'Write error during response: {write_error}')
+            # Still try to return a basic response
+            try:
+                return render_template('index.html',
+                                     audio_file=audio_filename,
+                                     transcript="Transcript may be unavailable due to system limitations.",
+                                     title=APP_TITLE,
+                                     examples=UI_EXAMPLES,
+                                     success="Podcast generated successfully! (Note: Some display issues may occur on this system)")
+            except:
+                # Final fallback - minimal response
+                return f"Podcast generated successfully! Audio file: {audio_filename}"
 
     except Exception as e:
         # Log the error with full traceback
@@ -521,9 +552,18 @@ def synthesize_audio():
             audio_filename = f"podcast_{uuid.uuid4().hex}.mp3"
             final_audio_path = os.path.join(app.config['AUDIO_FOLDER'], audio_filename)
             
-            # Copy the file to static folder
-            shutil.move(audio_file_path, final_audio_path)
-            app.logger.info(f'Audio file saved: {audio_filename}')
+            # Use a more robust approach for Synology systems
+            try:
+                # Copy the file first, then remove the original
+                shutil.copy2(audio_file_path, final_audio_path)
+                os.remove(audio_file_path)  # Clean up the original temp file
+                app.logger.info(f'Audio file saved: {audio_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move audio file: {e}')
+                # If copy fails, try to serve directly from temp location
+                # Keep the original filename for fallback
+                audio_filename = os.path.basename(audio_file_path)
+                app.logger.warning(f'Serving audio directly from temp location: {audio_filename}')
         else:
             audio_filename = None
 
@@ -533,12 +573,27 @@ def synthesize_audio():
         app.logger.info(f'Audio synthesis completed in {duration:.2f} seconds')
 
         # Render success page with results
-        return render_template('index.html',
-                             audio_file=audio_filename,
-                             transcript=transcript,
-                             title=APP_TITLE,
-                             examples=UI_EXAMPLES,
-                             success="Podcast synthesized successfully!")
+        try:
+            return render_template('index.html',
+                                 audio_file=audio_filename,
+                                 transcript=transcript,
+                                 title=APP_TITLE,
+                                 examples=UI_EXAMPLES,
+                                 success="Podcast synthesized successfully!")
+        except OSError as write_error:
+            # Handle specific write errors that may occur on Synology systems
+            app.logger.error(f'Write error during response: {write_error}')
+            # Still try to return a basic response
+            try:
+                return render_template('index.html',
+                                     audio_file=audio_filename,
+                                     transcript="Transcript may be unavailable due to system limitations.",
+                                     title=APP_TITLE,
+                                     examples=UI_EXAMPLES,
+                                     success="Podcast synthesized successfully! (Note: Some display issues may occur on this system)")
+            except:
+                # Final fallback - minimal response
+                return f"Podcast synthesized successfully! Audio file: {audio_filename}"
 
     except Exception as e:
         app.logger.error(f"Error synthesizing audio: {str(e)}", exc_info=True)
@@ -554,9 +609,26 @@ def synthesize_audio():
 
 @app.route('/static/audio/<filename>')
 def download_audio(filename):
-    """Serve audio files"""
+    """Serve audio files - with fallback for Synology systems"""
     app.logger.info(f'Audio file requested: {filename}')
-    return send_from_directory(app.config['AUDIO_FOLDER'], filename)
+    
+    # First try serving from the configured audio folder
+    static_audio_path = os.path.join(app.config['AUDIO_FOLDER'], filename)
+    if os.path.exists(static_audio_path):
+        return send_from_directory(app.config['AUDIO_FOLDER'], filename)
+    
+    # Fallback: try serving from gradio cache directory (temp location)
+    temp_audio_path = os.path.join(GRADIO_CACHE_DIR, filename)
+    if os.path.exists(temp_audio_path):
+        app.logger.info(f'Serving audio file from temp location: {filename}')
+        return send_from_directory(GRADIO_CACHE_DIR, filename)
+    
+    # If file not found in either location, return 404
+    app.logger.error(f'Audio file not found: {filename}')
+    return render_template('index.html',
+                         error="Audio file not found.",
+                         title=APP_TITLE,
+                         examples=UI_EXAMPLES), 404
 
 @app.errorhandler(413)
 def too_large(e):
@@ -581,9 +653,18 @@ def server_error(e):
     """Handle 500 errors"""
     app.logger.error(f"Server error: {str(e)}", exc_info=True)
     return render_template('index.html',
-                         error="An internal server error occurred. Please try again.",
-                         title=APP_TITLE,
-                         examples=UI_EXAMPLES), 500
+                          error="An internal server error occurred. Please try again.",
+                          title=APP_TITLE,
+                          examples=UI_EXAMPLES), 500
+
+@app.errorhandler(501)
+def not_implemented(e):
+    """Handle 501 errors - often related to permission issues on Synology"""
+    app.logger.error(f"501 Not Implemented error: {str(e)}", exc_info=True)
+    return render_template('index.html',
+                          error="Service temporarily unavailable due to system permissions. Please ensure the application has write access to temporary directories, or contact your system administrator.",
+                          title=APP_TITLE,
+                          examples=UI_EXAMPLES), 501
 
 if __name__ == '__main__':
     # Development server

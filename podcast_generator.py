@@ -10,6 +10,7 @@ from pathlib import Path
 from tempfile import NamedTemporaryFile
 from typing import List, Tuple, Optional
 import random
+import uuid
 
 # Third-party imports
 from loguru import logger
@@ -27,6 +28,7 @@ from constants import (
     get_voice_assignments,
     get_custom_voice_assignments,
     GOOGLE_CLOUD_API_KEY,
+    TEMP_AUDIO_DIR,
 )
 from prompts import (
     LANGUAGE_MODIFIER,
@@ -163,14 +165,20 @@ def generate_podcast(
 
     # Export the combined audio to a temporary file
     temporary_directory = GRADIO_CACHE_DIR
-    os.makedirs(temporary_directory, exist_ok=True)
+    try:
+        os.makedirs(temporary_directory, exist_ok=True)
+    except (PermissionError, OSError) as e:
+        raise ValueError(f"Permission denied: Unable to create temporary directory '{temporary_directory}'. Please ensure the application has write permissions: {e}")
 
-    temporary_file = NamedTemporaryFile(
-        dir=temporary_directory,
-        delete=False,
-        suffix=".mp3",
-    )
-    combined_audio.export(temporary_file.name, format="mp3")
+    # Use a more robust approach for creating temporary files on Synology
+    unique_filename = f"podcast_{uuid.uuid4().hex}.mp3"
+    temp_file_path = os.path.join(temporary_directory, unique_filename)
+    
+    # Export directly to the specified path
+    try:
+        combined_audio.export(temp_file_path, format="mp3")
+    except (PermissionError, OSError) as e:
+        raise ValueError(f"Permission denied: Unable to create audio file '{temp_file_path}'. Please ensure the application has write permissions: {e}")
 
     # Delete any files in the temp directory that end with .mp3 and are over a day old
     for file in glob.glob(f"{temporary_directory}*.mp3"):
@@ -182,7 +190,7 @@ def generate_podcast(
 
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temporary_file.name, transcript
+    return temp_file_path, transcript
 
 
 def generate_script_only(
@@ -367,13 +375,13 @@ def synthesize_audio_from_script(
     temporary_directory = GRADIO_CACHE_DIR
     os.makedirs(temporary_directory, exist_ok=True)
 
-    temporary_file = NamedTemporaryFile(
-        dir=temporary_directory,
-        delete=False,
-        suffix=".mp3",
-    )
-    combined_audio.export(temporary_file.name, format="mp3")
+    # Use a more robust approach for creating temporary files on Synology
+    unique_filename = f"podcast_{uuid.uuid4().hex}.mp3"
+    temp_file_path = os.path.join(temporary_directory, unique_filename)
+    
+    # Export directly to the specified path
+    combined_audio.export(temp_file_path, format="mp3")
 
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temporary_file.name, transcript 
+    return temp_file_path, transcript 
