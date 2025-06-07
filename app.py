@@ -92,6 +92,10 @@ def allowed_file(filename):
     """Check if the uploaded file is a PDF"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'pdf'}
 
+def allowed_script_file(filename):
+    """Check if the uploaded file is a valid script file"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in {'md', 'txt'}
+
 @app.route('/')
 def index():
     """Main page with the podcast generation form"""
@@ -111,7 +115,41 @@ def generate_podcast():
         app.logger.info(f'Form data received: {dict(request.form)}')
         app.logger.info(f'Files in request: {list(request.files.keys())}')
         
-        # Handle file uploads
+        # Handle script file upload first
+        script_content = None
+        if 'script_file' in request.files:
+            script_file = request.files['script_file']
+            app.logger.info(f'Script file found in request: {script_file}, filename: {script_file.filename if script_file else "None"}')
+            if script_file and script_file.filename:
+                app.logger.info(f'Script file has filename: {script_file.filename}')
+                if allowed_script_file(script_file.filename):
+                    app.logger.info(f'Script file type allowed: {script_file.filename}')
+                    try:
+                        script_content = script_file.read().decode('utf-8')
+                        app.logger.info(f'Script content loaded: {len(script_content)} characters')
+                        if script_content.strip():
+                            app.logger.info(f'Script content is not empty: first 100 chars: {script_content[:100]}...')
+                        else:
+                            app.logger.warning('Script content is empty or whitespace only')
+                            script_content = None  # Treat empty content as no content
+                    except UnicodeDecodeError:
+                        app.logger.error(f'Failed to decode script file: {script_file.filename}')
+                        return render_template('index.html',
+                                             error="Script file must be a valid text file (UTF-8 encoding).",
+                                             title=APP_TITLE,
+                                             examples=UI_EXAMPLES)
+                else:
+                    app.logger.warning(f'Invalid script file type: {script_file.filename}')
+                    return render_template('index.html',
+                                         error="Please upload only .md or .txt script files.",
+                                         title=APP_TITLE,
+                                         examples=UI_EXAMPLES)
+            else:
+                app.logger.info('Script file input exists but no file selected or no filename')
+        else:
+            app.logger.info('No script_file key found in request.files')
+        
+        # Handle PDF file uploads
         uploaded_files = []
         if 'pdf_files' in request.files:
             files = request.files.getlist('pdf_files')
@@ -153,31 +191,61 @@ def generate_podcast():
 
         # Log form data
         app.logger.info(f'Generation parameters: files={len(uploaded_files)}, url={bool(url)}, '
-                       f'tone={tone}, length={length}, language={language}, '
+                       f'script_file={bool(script_content)}, tone={tone}, length={length}, language={language}, '
                        f'host_name={host_name}, guest_name={guest_name}, host_gender={host_gender}, guest_gender={guest_gender}')
         
-        # Validate input
-        if not uploaded_files and not url:
-            app.logger.warning('No input provided (no files or URL)')
+        # Validate input - now including script_content
+        if not uploaded_files and not url and not script_content:
+            app.logger.warning('No input provided (no files, URL, or script)')
             return render_template('index.html',
                                  error=ERROR_MESSAGE_NO_INPUT,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES)
 
-        # Generate podcast using existing core function
-        app.logger.info('Starting podcast generation...')
-        audio_file_path, transcript = generate_podcast_core(
-            files=uploaded_files,
-            url=url,
-            question=question,
-            tone=tone,
-            length=length,
-            language=language,
-            host_name=host_name,
-            guest_name=guest_name,
-            host_gender=host_gender,
-            guest_gender=guest_gender
-        )
+        # If script content is provided, skip generation and go directly to audio synthesis
+        if script_content:
+            app.logger.info('Script content provided, skipping generation and synthesizing audio')
+            
+            # Log if other content sources were also provided but will be ignored
+            if uploaded_files or url:
+                app.logger.info(f'Ignoring {len(uploaded_files)} PDF files and URL ({bool(url)}) because script was provided')
+            
+            # Import the audio synthesis function
+            from podcast_generator import synthesize_audio_from_script
+            
+            # Use provided guest name or extract from script
+            final_guest_name = guest_name if guest_name else "AI Assistant"
+            
+            app.logger.info(f'Synthesizing audio with host: {host_name}, guest: {final_guest_name}, language: {language}')
+            
+            # Synthesize audio from provided script
+            audio_file_path, transcript = synthesize_audio_from_script(
+                script_content,
+                language,
+                host_name,
+                final_guest_name,
+                host_gender,
+                guest_gender
+            )
+            
+            app.logger.info('Audio synthesis from script completed successfully')
+        else:
+            # Generate podcast using existing core function
+            app.logger.info('Starting podcast generation...')
+            audio_file_path, transcript = generate_podcast_core(
+                files=uploaded_files,
+                url=url,
+                question=question,
+                tone=tone,
+                length=length,
+                language=language,
+                host_name=host_name,
+                guest_name=guest_name,
+                host_gender=host_gender,
+                guest_gender=guest_gender
+            )
+            app.logger.info('Podcast generation from content completed successfully')
+        
         app.logger.info('Podcast generation completed successfully')
 
         # Move generated audio to static folder
@@ -247,7 +315,41 @@ def generate_script_only():
     app.logger.info('Script generation request started')
     
     try:
-        # Handle file uploads (same as before)
+        # Handle script file upload first
+        script_content = None
+        if 'script_file' in request.files:
+            script_file = request.files['script_file']
+            app.logger.info(f'Script file found in request: {script_file}, filename: {script_file.filename if script_file else "None"}')
+            if script_file and script_file.filename:
+                app.logger.info(f'Script file has filename: {script_file.filename}')
+                if allowed_script_file(script_file.filename):
+                    app.logger.info(f'Script file type allowed: {script_file.filename}')
+                    try:
+                        script_content = script_file.read().decode('utf-8')
+                        app.logger.info(f'Script content loaded: {len(script_content)} characters')
+                        if script_content.strip():
+                            app.logger.info(f'Script content is not empty: first 100 chars: {script_content[:100]}...')
+                        else:
+                            app.logger.warning('Script content is empty or whitespace only')
+                            script_content = None  # Treat empty content as no content
+                    except UnicodeDecodeError:
+                        app.logger.error(f'Failed to decode script file: {script_file.filename}')
+                        return render_template('index.html',
+                                             error="Script file must be a valid text file (UTF-8 encoding).",
+                                             title=APP_TITLE,
+                                             examples=UI_EXAMPLES)
+                else:
+                    app.logger.warning(f'Invalid script file type: {script_file.filename}')
+                    return render_template('index.html',
+                                         error="Please upload only .md or .txt script files.",
+                                         title=APP_TITLE,
+                                         examples=UI_EXAMPLES)
+            else:
+                app.logger.info('Script file input exists but no file selected or no filename')
+        else:
+            app.logger.info('No script_file key found in request.files')
+        
+        # Handle PDF file uploads (same as before)
         uploaded_files = []
         if 'pdf_files' in request.files:
             files = request.files.getlist('pdf_files')
@@ -278,7 +380,28 @@ def generate_script_only():
         host_gender = request.form.get('host_gender', 'random')
         guest_gender = request.form.get('guest_gender', 'random')
         
-        # Validate input
+        # If script content is provided, skip generation and go directly to editor
+        if script_content:
+            app.logger.info('Script content provided, opening in editor')
+            
+            # Create generation parameters for the editor
+            import json
+            generation_params = {
+                'language': language,
+                'host_name': host_name,
+                'guest_name': guest_name if guest_name else "AI Assistant",
+                'length': length,
+                'host_gender': host_gender,
+                'guest_gender': guest_gender
+            }
+            
+            # Render script editor page with uploaded script
+            return render_template('script_editor.html',
+                                 script=script_content,
+                                 generation_params=json.dumps(generation_params),
+                                 title=APP_TITLE)
+        
+        # Validate input for script generation
         if not uploaded_files and not url:
             return render_template('index.html',
                                  error=ERROR_MESSAGE_NO_INPUT,

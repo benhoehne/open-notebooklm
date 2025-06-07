@@ -57,6 +57,37 @@
         <p class="mt-2 text-sm/6 text-gray-400">Help guide the conversation with a specific angle or question.</p>
       </div>
 
+      <!-- Script Import -->
+      <div>
+        <label for="script_file" class="block text-sm/6 font-medium text-white">Import Script File (Optional)</label>
+        <div class="mt-2 flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-4">
+          <div class="text-center">
+            <svg class="mx-auto size-8 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+            </svg>
+            <div class="mt-2 flex text-sm/6 text-gray-400">
+              <label for="script_file" class="relative cursor-pointer rounded-md bg-gray-900 font-semibold text-white hover:text-indigo-500">
+                <span>Upload Markdown Script</span>
+                <input id="script_file" name="script_file" type="file" accept=".md,.txt" class="sr-only">
+              </label>
+            </div>
+            <p class="text-xs/5 text-gray-400">Upload a .md file to skip script generation</p>
+          </div>
+        </div>
+        <!-- Script file display -->
+        <div id="script-file-display" class="mt-3 hidden">
+          <div class="rounded-lg bg-emerald-900/20 border border-emerald-500/30 p-4">
+            <div class="flex items-center">
+              <svg class="w-5 h-5 text-emerald-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd"/>
+              </svg>
+              <span class="text-sm font-medium text-emerald-300" id="script-file-name"></span>
+            </div>
+          </div>
+        </div>
+        <p class="mt-2 text-sm/6 text-gray-400">Import an existing script to skip content processing and go directly to audio generation. <strong>Script files take priority over all other content sources.</strong></p>
+      </div>
+
     </div>
   </div>
 
@@ -266,4 +297,60 @@ document.getElementById('pdf_files').addEventListener('change', function(e) {
     selectedDisplay.classList.add('hidden');
   }
 });
+
+// Script file import handling
+document.getElementById('script_file').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  const scriptDisplay = document.getElementById('script-file-display');
+  const scriptFileName = document.getElementById('script-file-name');
+  
+  if (file) {
+    scriptDisplay.classList.remove('hidden');
+    scriptFileName.textContent = `📝 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+    
+    // Check if other content sources are also provided
+    checkContentPriority();
+  } else {
+    scriptDisplay.classList.add('hidden');
+    checkContentPriority();
+  }
+});
+
+// Add function to check content priority and show warnings
+function checkContentPriority() {
+  const scriptFile = document.getElementById('script_file').files[0];
+  const pdfFiles = document.getElementById('pdf_files').files;
+  const urlField = document.getElementById('url').value.trim();
+  
+  // Remove any existing priority warning
+  const existingWarning = document.getElementById('priority-warning');
+  if (existingWarning) {
+    existingWarning.remove();
+  }
+  
+  // If script is uploaded and other content exists, show warning
+  if (scriptFile && (pdfFiles.length > 0 || urlField)) {
+    const warningDiv = document.createElement('div');
+    warningDiv.id = 'priority-warning';
+    warningDiv.className = 'mt-4 p-3 bg-amber-900/20 border border-amber-500/30 rounded-lg';
+    warningDiv.innerHTML = `
+      <div class="flex items-center">
+        <svg class="w-5 h-5 text-amber-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+        </svg>
+        <span class="text-sm text-amber-300">
+          <strong>Script file detected:</strong> PDF files and URL will be ignored. Only the uploaded script will be used.
+        </span>
+      </div>
+    `;
+    
+    // Insert after the script file display
+    const scriptSection = document.getElementById('script-file-display').parentElement;
+    scriptSection.appendChild(warningDiv);
+  }
+}
+
+// Also check when PDF files or URL change
+document.getElementById('pdf_files').addEventListener('change', checkContentPriority);
+document.getElementById('url').addEventListener('input', checkContentPriority);
 </script> 

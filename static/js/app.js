@@ -173,6 +173,7 @@ function setupFormValidation() {
 function validateForm() {
     const fileInput = document.getElementById('pdf_files');
     const urlInput = document.getElementById('url');
+    const scriptInput = document.getElementById('script_file');
     
     // Debug logging
     console.log('=== FORM VALIDATION DEBUG ===');
@@ -185,6 +186,9 @@ function validateForm() {
     console.log('Number of files:', fileInput ? fileInput.files.length : 0);
     console.log('URL input:', urlInput);
     console.log('URL value:', urlInput ? urlInput.value : 'No URL input');
+    console.log('Script input:', scriptInput);
+    console.log('Script files:', scriptInput ? scriptInput.files : 'No script input');
+    console.log('Number of script files:', scriptInput ? scriptInput.files.length : 0);
     
     // Additional debugging - check all file inputs on the page
     const allFileInputs = document.querySelectorAll('input[type="file"]');
@@ -196,22 +200,33 @@ function validateForm() {
     // Check if at least one content source is provided
     const hasFiles = fileInput && fileInput.files && fileInput.files.length > 0;
     const hasUrl = urlInput && urlInput.value.trim() !== '';
+    const hasScript = scriptInput && scriptInput.files && scriptInput.files.length > 0;
     
     console.log('Has files:', hasFiles);
     console.log('Has URL:', hasUrl);
+    console.log('Has script:', hasScript);
     
-    if (!hasFiles && !hasUrl) {
-        console.log('VALIDATION FAILED: No files and no URL');
-        alert('Please provide at least one content source: upload PDF files or enter a website URL.');
+    if (!hasFiles && !hasUrl && !hasScript) {
+        console.log('VALIDATION FAILED: No files, no URL, and no script');
+        alert('Please provide at least one content source: upload PDF files, enter a website URL, or import a script file.');
         return false;
     }
     
     // Debug file details if files are present
     if (hasFiles) {
-        console.log('File details:');
+        console.log('PDF file details:');
         for (let i = 0; i < fileInput.files.length; i++) {
             const file = fileInput.files[i];
             console.log(`  File ${i}: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
+        }
+    }
+    
+    // Debug script file details if script is present
+    if (hasScript) {
+        console.log('Script file details:');
+        for (let i = 0; i < scriptInput.files.length; i++) {
+            const file = scriptInput.files[i];
+            console.log(`  Script ${i}: ${file.name}, Size: ${file.size}, Type: ${file.type}`);
         }
     }
     

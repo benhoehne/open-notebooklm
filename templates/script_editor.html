@@ -54,6 +54,17 @@
             </a>
             
             <div class="flex items-center space-x-4">
+                <!-- Import/Export buttons -->
+                <div class="flex items-center space-x-2">
+                    <input type="file" id="import-script" accept=".md,.txt" class="hidden">
+                    <button type="button" onclick="importScript()" class="px-3 py-2 text-xs font-medium text-blue-300 hover:text-blue-200 border border-blue-500/30 rounded-md hover:border-blue-400/50">
+                        📥 Import
+                    </button>
+                    <button type="button" onclick="exportScript()" class="px-3 py-2 text-xs font-medium text-green-300 hover:text-green-200 border border-green-500/30 rounded-md hover:border-green-400/50">
+                        📤 Export
+                    </button>
+                </div>
+                
                 <button type="button" onclick="resetScript()" class="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white">
                     Reset to Original
                 </button>
@@ -118,5 +129,59 @@ function resetScript() {
         }
     }
 }
+
+function exportScript() {
+    let content = '';
+    if (editor) {
+        content = editor.getValue();
+    } else {
+        content = document.getElementById('script-editor').value;
+    }
+    
+    // Create filename with timestamp
+    const now = new Date();
+    const timestamp = now.toISOString().slice(0, 19).replace(/[T:]/g, '-');
+    const filename = `podcast-script-${timestamp}.md`;
+    
+    // Create and download file
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+}
+
+function importScript() {
+    document.getElementById('import-script').click();
+}
+
+// Handle script file import
+document.getElementById('import-script').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!confirm('Are you sure you want to import this script? This will replace the current content.')) {
+        e.target.value = ''; // Reset file input
+        return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const content = event.target.result;
+        if (editor) {
+            editor.setValue(content);
+        } else {
+            document.getElementById('script-editor').value = content;
+        }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    e.target.value = '';
+});
 </script>
 {% endblock %} 
