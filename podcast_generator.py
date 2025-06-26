@@ -39,9 +39,9 @@ from prompts import (
 )
 from schema import (
     ShortDialogue, MediumDialogue, LongDialogue,
-    create_short_dialogue_schema, create_medium_dialogue_schema, create_long_dialogue_schema
+    get_dialogue_schema
 )
-from utils import generate_podcast_audio, generate_script, parse_url
+from utils import generate_podcast_audio, generate_script, parse_url, generate_vtt_content, clear_voice_cache
 
 from pydub import AudioSegment
 
@@ -62,9 +62,16 @@ def generate_podcast(
 
     text = ""
     
+    # Clear voice cache to ensure fresh voice assignments for this podcast
+    clear_voice_cache()
+    
     # Get voice assignments based on user preferences
     voice_assignments = get_custom_voice_assignments(host_gender, guest_gender)
-    logger.info(f"Voice assignments for this podcast: Host={'Female' if 'HD-F' in list(voice_assignments['Host (Sam)'].values())[0] else 'Male'}, Guest={'Female' if 'HD-F' in list(voice_assignments['Guest'].values())[0] else 'Male'}")
+    
+    # Log voice assignments (now using list-based structure)
+    host_voice_sample = list(voice_assignments['Host (Sam)'].values())[0][0] if voice_assignments['Host (Sam)'] else "Unknown"
+    guest_voice_sample = list(voice_assignments['Guest'].values())[0][0] if voice_assignments['Guest'] else "Unknown"
+    logger.info(f"Voice assignments for this podcast: Host={'Female' if 'HD-F' in host_voice_sample or 'Achernar' in host_voice_sample or 'Aoede' in host_voice_sample else 'Male'}, Guest={'Female' if 'HD-F' in guest_voice_sample or 'Achernar' in guest_voice_sample or 'Aoede' in guest_voice_sample else 'Male'}")
 
     # Require Google Cloud TTS API key
     if not GOOGLE_CLOUD_API_KEY:
@@ -115,50 +122,81 @@ def generate_podcast(
     if language:
         modified_system_prompt += f"\n\n{LANGUAGE_MODIFIER} {language}."
 
-    # Call the LLM with dynamic schema based on host name
+    # Get the appropriate schema and generate the script
+    final_guest_name = guest_name if guest_name else "Alex"
+    
+    # Map length to schema type
     if length == "Short (1-2 min)":
-        DialogueSchema = create_short_dialogue_schema(host_name)
-        llm_output = generate_script(modified_system_prompt, text, DialogueSchema)
+        schema_type = "short"
     elif length == "Medium (3-5 min)":
-        DialogueSchema = create_medium_dialogue_schema(host_name)
-        llm_output = generate_script(modified_system_prompt, text, DialogueSchema)
+        schema_type = "medium"
     else:  # Long (10-12 min)
-        DialogueSchema = create_long_dialogue_schema(host_name)
-        llm_output = generate_script(modified_system_prompt, text, DialogueSchema)
+        schema_type = "long"
+    
+    DialogueSchema = get_dialogue_schema(schema_type)
+    llm_output = generate_script(
+        modified_system_prompt, 
+        text, 
+        DialogueSchema,
+        host_name=host_name,
+        guest_name=final_guest_name
+    )
 
-    # Use custom guest name if provided
+    # Set guest name in output
     if guest_name:
         llm_output.name_of_guest = guest_name
+    elif not hasattr(llm_output, 'name_of_guest') or not llm_output.name_of_guest:
+        llm_output.name_of_guest = final_guest_name
 
     logger.info(f"Generated dialogue: {llm_output}")
 
     # Process the dialogue
     audio_segments = []
+    dialogue_items = []
     transcript = ""
     total_characters = 0
 
     for line in llm_output.dialogue:
-        logger.info(f"Generating audio for {line.speaker}: {line.text}")
+        # With proper Pydantic models, we should have objects directly
+        line_speaker = line.speaker
+        line_text = line.text
+            
+        # Debug logging to see what we're getting
+        logger.info(f"Processing dialogue line - Speaker: '{line_speaker}', Text: '{line_text[:50]}...' (length: {len(line_text)})")
         
-        # Update speaker name in transcript
-        speaker_name = host_name if line.speaker == f"Host ({host_name})" else llm_output.name_of_guest
-        if line.speaker == f"Host ({host_name})":
-            speaker = f"**{speaker_name}**: {line.text}"
+        # Skip empty dialogue items
+        if not line_speaker or not line_text:
+            logger.warning(f"Skipping empty dialogue line - Speaker: '{line_speaker}', Text length: {len(line_text)}")
+            continue
+            
+        logger.info(f"Generating audio for {line_speaker}: {line_text}")
+        
+        # More flexible speaker matching for transcript
+        if 'host' in line_speaker.lower() or line_speaker.lower() == host_name.lower():
+            speaker_name = host_name
         else:
-            speaker = f"**{speaker_name}**: {line.text}"
+            speaker_name = llm_output.name_of_guest
+            
+        speaker = f"**{speaker_name}**: {line_text}"
         transcript += speaker + "\n\n"
-        total_characters += len(line.text)
+        total_characters += len(line_text)
 
         # Google TTS expects full language names (e.g., "German")
         language_for_tts = language
 
         # Get audio file path
         audio_file_path = generate_podcast_audio(
-            line.text, line.speaker, language_for_tts, voice_assignments
+            line_text, line_speaker, language_for_tts, voice_assignments
         )
         # Read the audio file into an AudioSegment
         audio_segment = AudioSegment.from_file(audio_file_path)
         audio_segments.append(audio_segment)
+        
+        # Store dialogue item for VTT generation
+        dialogue_items.append({
+            'speaker': speaker_name,
+            'text': line_text
+        })
 
     # Concatenate all audio segments
     combined_audio = sum(audio_segments)
@@ -180,6 +218,18 @@ def generate_podcast(
     except (PermissionError, OSError) as e:
         raise ValueError(f"Permission denied: Unable to create audio file '{temp_file_path}'. Please ensure the application has write permissions: {e}")
 
+    # Generate VTT file
+    vtt_content = generate_vtt_content(dialogue_items, audio_segments)
+    vtt_file_path = temp_file_path.replace('.mp3', '.vtt')
+    
+    try:
+        with open(vtt_file_path, 'w', encoding='utf-8') as vtt_file:
+            vtt_file.write(vtt_content)
+        logger.info(f"Generated VTT file: {vtt_file_path}")
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Failed to create VTT file: {e}")
+        vtt_file_path = None
+
     # Delete any files in the temp directory that end with .mp3 and are over a day old
     for file in glob.glob(f"{temporary_directory}*.mp3"):
         if (
@@ -190,7 +240,7 @@ def generate_podcast(
 
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temp_file_path, transcript
+    return temp_file_path, transcript, vtt_file_path
 
 
 def generate_script_only(
@@ -252,20 +302,31 @@ def generate_script_only(
     if language:
         modified_system_prompt += f"\n\n{LANGUAGE_MODIFIER} {language}."
 
-    # Call the LLM with dynamic schema based on host name
+    # Get the appropriate schema and generate the script
+    final_guest_name = guest_name if guest_name else "Alex"
+    
+    # Map length to schema type
     if length == "Short (1-2 min)":
-        DialogueSchema = create_short_dialogue_schema(host_name)
-        llm_output = generate_script(modified_system_prompt, text, DialogueSchema)
+        schema_type = "short"
     elif length == "Medium (3-5 min)":
-        DialogueSchema = create_medium_dialogue_schema(host_name)
-        llm_output = generate_script(modified_system_prompt, text, DialogueSchema)
+        schema_type = "medium"
     else:  # Long (10-12 min)
-        DialogueSchema = create_long_dialogue_schema(host_name)
-        llm_output = generate_script(modified_system_prompt, text, DialogueSchema)
+        schema_type = "long"
+    
+    DialogueSchema = get_dialogue_schema(schema_type)
+    llm_output = generate_script(
+        modified_system_prompt, 
+        text, 
+        DialogueSchema,
+        host_name=host_name,
+        guest_name=final_guest_name
+    )
 
-    # Use custom guest name if provided
+    # Set guest name in output
     if guest_name:
         llm_output.name_of_guest = guest_name
+    elif not hasattr(llm_output, 'name_of_guest') or not llm_output.name_of_guest:
+        llm_output.name_of_guest = final_guest_name
 
     # Convert dialogue to markdown format for editing
     script_content = f"# Podcast Script\n\n"
@@ -274,8 +335,24 @@ def generate_script_only(
     script_content += "---\n\n"
     
     for line in llm_output.dialogue:
-        speaker_name = host_name if line.speaker == f"Host ({host_name})" else llm_output.name_of_guest
-        script_content += f"**{speaker_name}:** {line.text}\n\n"
+        # With proper Pydantic models, we should have objects directly
+        speaker = line.speaker
+        text = line.text
+        
+        # Debug logging to see what we're getting
+        logger.info(f"Processing dialogue line - Speaker: '{speaker}', Text: '{text[:50]}...' (length: {len(text)})")
+        
+        # More flexible speaker matching
+        if speaker and text:  # Only process if both speaker and text exist
+            # Check if this is the host
+            if 'host' in speaker.lower() or speaker.lower() == host_name.lower():
+                speaker_name = host_name
+            else:
+                speaker_name = llm_output.name_of_guest
+            
+            script_content += f"**{speaker_name}:** {text}\n\n"
+        else:
+            logger.warning(f"Skipping empty dialogue line - Speaker: '{speaker}', Text length: {len(text)}")
 
     # Store generation parameters for later use
     generation_params = {
@@ -298,6 +375,9 @@ def synthesize_audio_from_script(
 ) -> Tuple[str, str]:
     """Synthesize audio from an edited script."""
     
+    # Clear voice cache to ensure fresh voice assignments for this podcast
+    clear_voice_cache()
+    
     # Get voice assignments based on user preferences
     voice_assignments = get_custom_voice_assignments(host_gender, guest_gender)
     
@@ -309,9 +389,23 @@ def synthesize_audio_from_script(
     current_speaker = None
     current_text = ""
     
+    # Skip everything before the separator
+    separator_found = False
+    
     for line in lines:
         line = line.strip()
-        if not line or line.startswith('#') or line == '---':
+        
+        # Skip empty lines and headers
+        if not line or line.startswith('#'):
+            continue
+            
+        # Check for separator
+        if line == '---':
+            separator_found = True
+            continue
+            
+        # Skip metadata section before separator
+        if not separator_found:
             continue
             
         # Check if this is a speaker line
@@ -382,6 +476,31 @@ def synthesize_audio_from_script(
     # Export directly to the specified path
     combined_audio.export(temp_file_path, format="mp3")
 
+    # Generate VTT file - create dialogue items with proper speaker names for VTT
+    vtt_dialogue_items = []
+    for item in dialogue_items:
+        # Extract clean speaker name from the speaker format
+        if item['speaker'] == "Host (Sam)":
+            speaker_name = host_name
+        else:
+            speaker_name = guest_name
+        
+        vtt_dialogue_items.append({
+            'speaker': speaker_name,
+            'text': item['text']
+        })
+    
+    vtt_content = generate_vtt_content(vtt_dialogue_items, audio_segments)
+    vtt_file_path = temp_file_path.replace('.mp3', '.vtt')
+    
+    try:
+        with open(vtt_file_path, 'w', encoding='utf-8') as vtt_file:
+            vtt_file.write(vtt_content)
+        logger.info(f"Generated VTT file: {vtt_file_path}")
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Failed to create VTT file: {e}")
+        vtt_file_path = None
+
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temp_file_path, transcript 
+    return temp_file_path, transcript, vtt_file_path 

@@ -18,14 +18,14 @@ You are a world-class podcast producer tasked with transforming the provided inp
    - Creative approaches to fill any gaps in the information
 
 3. **Craft the Dialogue:**
-   Develop a natural, conversational flow between the host (Sam) and the guest speaker (the author or an expert on the topic). Incorporate:
+   Develop a natural, conversational flow between the host and the guest speaker (the author or an expert on the topic). Incorporate:
    - The best ideas from your brainstorming session
    - Clear explanations of complex topics
    - An engaging and lively tone to captivate listeners
    - A balance of information and entertainment
 
    Rules for the dialogue:
-   - The host (Sam) always initiates the conversation and interviews the guest
+   - The host always initiates the conversation and interviews the guest
    - Include thoughtful questions from the host to guide the discussion
    - Incorporate natural speech patterns, including occasional verbal fillers (e.g., "um," "well," "you know")
    - Allow for natural interruptions and back-and-forth between host and guest
@@ -51,7 +51,7 @@ You are a world-class podcast producer tasked with transforming the provided inp
    - Include brief "breather" moments for listeners to absorb complex information
    - End on a high note, perhaps with a thought-provoking question or a call-to-action for listeners
 
-IMPORTANT RULE: Each line of dialogue should be no more than 100 characters (e.g., can finish within 5-8 seconds)
+IMPORTANT RULE: Each line of dialogue should be no more than 200 characters.
 
 Remember: Always reply in valid JSON format, without code blocks. Begin directly with the JSON output.
 """
@@ -63,7 +63,7 @@ TONE_MODIFIER = "TONE: The tone of the podcast should be"
 LANGUAGE_MODIFIER = "OUTPUT LANGUAGE <IMPORTANT>: The the podcast should be"
 
 LENGTH_MODIFIERS = {
-    "Short (1-2 min)": "Keep the podcast brief, around 1-2 minutes long.",
-    "Medium (3-5 min)": "Aim for a moderate length, about 3-5 minutes.",
-    "Long (10-12 min)": "Create a comprehensive, in-depth podcast around 10-12 minutes long with detailed discussions.",
+    "Short (1-2 min)": "Keep the podcast brief, around 2 minutes long.",
+    "Medium (3-5 min)": "Aim for a moderate length, about 5 minutes.",
+    "Long (10-12 min)": "Create a comprehensive, in-depth podcast around 12 minutes long with detailed discussions.",
 }

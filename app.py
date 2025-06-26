@@ -246,7 +246,7 @@ def generate_podcast():
             app.logger.info(f'Synthesizing audio with host: {host_name}, guest: {final_guest_name}, language: {language}')
             
             # Synthesize audio from provided script
-            audio_file_path, transcript = synthesize_audio_from_script(
+            audio_file_path, transcript, vtt_file_path = synthesize_audio_from_script(
                 script_content,
                 language,
                 host_name,
@@ -259,7 +259,7 @@ def generate_podcast():
         else:
             # Generate podcast using existing core function
             app.logger.info('Starting podcast generation...')
-            audio_file_path, transcript = generate_podcast_core(
+            audio_file_path, transcript, vtt_file_path = generate_podcast_core(
                 files=uploaded_files,
                 url=url,
                 question=question,
@@ -276,6 +276,7 @@ def generate_podcast():
         app.logger.info('Podcast generation completed successfully')
 
         # Move generated audio to static folder
+        vtt_filename = None
         if audio_file_path:
             audio_filename = f"podcast_{uuid.uuid4().hex}.mp3"
             final_audio_path = os.path.join(app.config['AUDIO_FOLDER'], audio_filename)
@@ -296,6 +297,19 @@ def generate_podcast():
             audio_filename = None
             app.logger.warning('No audio file generated')
 
+        # Move VTT file to static folder
+        if vtt_file_path and audio_filename:
+            vtt_filename = audio_filename.replace('.mp3', '.vtt')
+            final_vtt_path = os.path.join(app.config['AUDIO_FOLDER'], vtt_filename)
+            
+            try:
+                shutil.copy2(vtt_file_path, final_vtt_path)
+                os.remove(vtt_file_path)  # Clean up the original temp file
+                app.logger.info(f'VTT file saved: {vtt_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move VTT file: {e}')
+                vtt_filename = None
+
         # Clean up uploaded files
         for file_path in uploaded_files:
             try:
@@ -313,6 +327,7 @@ def generate_podcast():
         try:
             return render_template('index.html',
                                  audio_file=audio_filename,
+                                 vtt_file=vtt_filename,
                                  transcript=transcript,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES,
@@ -324,6 +339,7 @@ def generate_podcast():
             try:
                 return render_template('index.html',
                                      audio_file=audio_filename,
+                                     vtt_file=vtt_filename,
                                      transcript="Transcript may be unavailable due to system limitations.",
                                      title=APP_TITLE,
                                      examples=UI_EXAMPLES,
@@ -538,7 +554,7 @@ def synthesize_audio():
         from podcast_generator import synthesize_audio_from_script
         
         # Synthesize audio from edited script
-        audio_file_path, transcript = synthesize_audio_from_script(
+        audio_file_path, transcript, vtt_file_path = synthesize_audio_from_script(
             edited_script,
             generation_params['language'],
             generation_params['host_name'],
@@ -548,6 +564,7 @@ def synthesize_audio():
         )
 
         # Move generated audio to static folder
+        vtt_filename = None
         if audio_file_path:
             audio_filename = f"podcast_{uuid.uuid4().hex}.mp3"
             final_audio_path = os.path.join(app.config['AUDIO_FOLDER'], audio_filename)
@@ -567,6 +584,19 @@ def synthesize_audio():
         else:
             audio_filename = None
 
+        # Move VTT file to static folder
+        if vtt_file_path and audio_filename:
+            vtt_filename = audio_filename.replace('.mp3', '.vtt')
+            final_vtt_path = os.path.join(app.config['AUDIO_FOLDER'], vtt_filename)
+            
+            try:
+                shutil.copy2(vtt_file_path, final_vtt_path)
+                os.remove(vtt_file_path)  # Clean up the original temp file
+                app.logger.info(f'VTT file saved: {vtt_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move VTT file: {e}')
+                vtt_filename = None
+
         # Log completion time
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -576,6 +606,7 @@ def synthesize_audio():
         try:
             return render_template('index.html',
                                  audio_file=audio_filename,
+                                 vtt_file=vtt_filename,
                                  transcript=transcript,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES,
@@ -587,6 +618,7 @@ def synthesize_audio():
             try:
                 return render_template('index.html',
                                      audio_file=audio_filename,
+                                     vtt_file=vtt_filename,
                                      transcript="Transcript may be unavailable due to system limitations.",
                                      title=APP_TITLE,
                                      examples=UI_EXAMPLES,

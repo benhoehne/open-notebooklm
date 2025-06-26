@@ -34,7 +34,7 @@ from constants import (
     JINA_RETRY_DELAY,
     TEMP_AUDIO_DIR,
 )
-from schema import ShortDialogue, MediumDialogue
+from schema import ShortDialogue, MediumDialogue, LongDialogue
 
 # Initialize Google Gemini client with the new Gen AI SDK
 # Only initialize if API key is available
@@ -54,16 +54,38 @@ if GOOGLE_CLOUD_API_KEY:
 def generate_script(
     system_prompt: str,
     input_text: str,
-    output_model: Union[ShortDialogue, MediumDialogue],
-) -> Union[ShortDialogue, MediumDialogue]:
-    """Get the dialogue from the LLM."""
+    output_model: Union[ShortDialogue, MediumDialogue, LongDialogue],
+    host_name: str = "Sam",
+    guest_name: str = "Alex"
+) -> Union[ShortDialogue, MediumDialogue, LongDialogue]:
+    """Get the dialogue from the LLM with structured output."""
+    
+    # Add speaker name constraints to the system prompt
+    enhanced_system_prompt = f"""{system_prompt}
+
+CRITICAL REQUIREMENTS:
+- Use EXACTLY these speaker names in the dialogue:
+  - Host: "{host_name}"
+  - Guest: "{guest_name}"
+- The 'name_of_guest' field should be set to: "{guest_name}"
+- Every dialogue item must have non-empty text (no empty strings)
+- Do not use generic names like "Dr. Anya Sharma" - use the specified names only
+- Generate the appropriate number of dialogue items based on the requested length
+- Ensure each dialogue item contributes meaningfully to the conversation
+"""
 
     # Call the LLM for the first time
-    first_draft_dialogue = call_llm(system_prompt, input_text, output_model)
+    first_draft_dialogue = call_llm(enhanced_system_prompt, input_text, output_model)
 
     # Call the LLM a second time to improve the dialogue
-    system_prompt_with_dialogue = f"{system_prompt}\n\nHere is the first draft of the dialogue you provided:\n\n{first_draft_dialogue.model_dump_json()}."
-    final_dialogue = call_llm(system_prompt_with_dialogue, "Please improve the dialogue. Make it more natural and engaging.", output_model)
+    system_prompt_with_dialogue = f"""{enhanced_system_prompt}
+
+Here is the first draft of the dialogue you provided:
+{first_draft_dialogue.model_dump_json()}
+
+MAINTAIN THE SAME SPEAKER NAMES: Host="{host_name}", Guest="{guest_name}"
+"""
+    final_dialogue = call_llm(system_prompt_with_dialogue, "Please improve the dialogue. Make it more natural and engaging. Keep the same speaker names and ensure all text fields are non-empty.", output_model)
 
     return final_dialogue
 
@@ -120,6 +142,12 @@ def parse_url(url: str) -> str:
     return response.text
 
 
+def clear_voice_cache():
+    """Clear the voice cache to ensure fresh voice assignments for new podcasts."""
+    if hasattr(_use_google_tts, '_voice_cache'):
+        _use_google_tts._voice_cache.clear()
+
+
 def generate_podcast_audio(
     text: str, speaker: str, language: str, voice_assignments: dict = None
 ) -> str:
@@ -138,11 +166,36 @@ def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: d
     # Use provided voice assignments or fallback to the default
     voices_to_use = voice_assignments if voice_assignments else GOOGLE_TTS_VOICES
     
-    # Get the appropriate Chirp HD voice for the speaker and language
-    voice_name = voices_to_use.get(speaker, {}).get(language)
-    if not voice_name:
+    # Get the appropriate voice for the speaker and language
+    # voices_to_use[speaker] now contains a dict with language->list mappings
+    speaker_voices = voices_to_use.get(speaker, {})
+    
+    # Get list of voices for this language
+    voice_list = speaker_voices.get(language, [])
+    if not voice_list:
         # Fallback to English if language not supported
-        voice_name = voices_to_use.get(speaker, {}).get("English", "en-US-Chirp-HD-F")
+        voice_list = speaker_voices.get("English", ["en-US-Chirp-HD-F"])
+    
+    # Check if we have a selected voice for this speaker/language combination stored
+    # This ensures consistent voice selection throughout the podcast
+    cache_key = f"{speaker}_{language}"
+    if not hasattr(_use_google_tts, '_voice_cache'):
+        _use_google_tts._voice_cache = {}
+    
+    if cache_key in _use_google_tts._voice_cache:
+        voice_name = _use_google_tts._voice_cache[cache_key]
+    else:
+        # Select a voice that's not already used by other speakers
+        import random
+        used_voices = set(_use_google_tts._voice_cache.values())
+        available_voices = [v for v in voice_list if v not in used_voices]
+        
+        # If all voices are used, fall back to any voice (shouldn't happen with 4 voices per gender)
+        if not available_voices:
+            available_voices = voice_list
+            
+        voice_name = random.choice(available_voices)
+        _use_google_tts._voice_cache[cache_key] = voice_name
     
     # Extract language code from voice name (e.g., "en-US" from "en-US-Chirp-HD-F")
     language_code = '-'.join(voice_name.split('-')[:2])
@@ -195,6 +248,45 @@ def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: d
             if attempt == GOOGLE_TTS_RETRY_ATTEMPTS - 1:  # Last attempt
                 raise Exception(f"Google Cloud TTS failed after {GOOGLE_TTS_RETRY_ATTEMPTS} attempts: {e}")
             time.sleep(GOOGLE_TTS_RETRY_DELAY)
+
+
+def generate_vtt_content(dialogue_items, audio_segments):
+    """Generate WebVTT content from dialogue items and their corresponding audio segments."""
+    vtt_content = "WEBVTT\n\n"
+    
+    current_time = 0.0  # Start time in seconds
+    
+    for i, (dialogue_item, audio_segment) in enumerate(zip(dialogue_items, audio_segments)):
+        # Calculate start and end times
+        start_time = current_time
+        duration = len(audio_segment) / 1000.0  # Convert milliseconds to seconds
+        end_time = start_time + duration
+        
+        # Format timestamps as HH:MM:SS.mmm
+        start_timestamp = format_vtt_timestamp(start_time)
+        end_timestamp = format_vtt_timestamp(end_time)
+        
+        # Extract speaker name and text
+        speaker_name = dialogue_item.get('speaker', 'Unknown')
+        text = dialogue_item.get('text', '')
+        
+        # Add VTT cue
+        vtt_content += f"{i + 1}\n"
+        vtt_content += f"{start_timestamp} --> {end_timestamp}\n"
+        vtt_content += f"<v {speaker_name}>{text}\n\n"
+        
+        # Update current time for next segment
+        current_time = end_time
+    
+    return vtt_content
+
+
+def format_vtt_timestamp(seconds):
+    """Format seconds as VTT timestamp (HH:MM:SS.mmm)."""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = seconds % 60
+    return f"{hours:02d}:{minutes:02d}:{secs:06.3f}"
 
 
 def cleanup_temp_audio_files(max_age_hours=24):

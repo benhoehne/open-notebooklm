@@ -1,104 +1,81 @@
 """
-schema.py
+schema.py - Pydantic models for structured podcast generation
 """
 
-from typing import Literal, List, Union
-
+from typing import List
 from pydantic import BaseModel, Field
 
 
 class DialogueItem(BaseModel):
-    """A single dialogue item."""
-
-    speaker: Literal["Host (Sam)", "Guest"]
-    text: str
+    """A single dialogue item with speaker and text."""
+    
+    speaker: str = Field(
+        ..., 
+        description="The speaker name, should be either the host name or guest name"
+    )
+    text: str = Field(
+        ..., 
+        description="The dialogue text - must not be empty"
+    )
 
 
 class ShortDialogue(BaseModel):
-    """The dialogue between the host and guest."""
+    """The dialogue between the host and guest for short-form content."""
 
-    scratchpad: str
-    name_of_guest: str
+    scratchpad: str = Field(
+        ..., 
+        description="Your thinking process and planning for the dialogue"
+    )
+    name_of_guest: str = Field(
+        ..., 
+        description="The name of the guest speaker"
+    )
     dialogue: List[DialogueItem] = Field(
-        ..., description="A list of dialogue items, typically between 11 to 17 items"
+        ..., 
+        description="A list of dialogue items, typically between 11 to 17 items"
     )
 
 
 class MediumDialogue(BaseModel):
-    """The dialogue between the host and guest."""
+    """The dialogue between the host and guest for medium-form content."""
 
-    scratchpad: str
-    name_of_guest: str
+    scratchpad: str = Field(
+        ..., 
+        description="Your thinking process and planning for the dialogue"
+    )
+    name_of_guest: str = Field(
+        ..., 
+        description="The name of the guest speaker"
+    )
     dialogue: List[DialogueItem] = Field(
-        ..., description="A list of dialogue items, typically between 19 to 29 items"
+        ..., 
+        description="A list of dialogue items, typically between 19 to 29 items"
     )
 
 
 class LongDialogue(BaseModel):
     """The dialogue between the host and guest for long-form content."""
 
-    scratchpad: str
-    name_of_guest: str
+    scratchpad: str = Field(
+        ..., 
+        description="Your thinking process and planning for the dialogue"
+    )
+    name_of_guest: str = Field(
+        ..., 
+        description="The name of the guest speaker"
+    )
     dialogue: List[DialogueItem] = Field(
-        ..., description="A list of dialogue items, typically between 70 to 100 items for comprehensive coverage"
+        ..., 
+        description="A list of dialogue items, typically between 70 to 100 items for comprehensive coverage"
     )
 
 
-# Dynamic schema creation functions for custom host names
-def create_dynamic_dialogue_item(host_name: str = "Sam"):
-    """Create a DialogueItem class with custom host name."""
-    
-    class DynamicDialogueItem(BaseModel):
-        """A single dialogue item with custom speaker names."""
-        speaker: Literal[f"Host ({host_name})", "Guest"]
-        text: str
-    
-    return DynamicDialogueItem
-
-
-def create_short_dialogue_schema(host_name: str = "Sam"):
-    """Create a ShortDialogue schema with custom host name."""
-    
-    DialogueItemClass = create_dynamic_dialogue_item(host_name)
-    
-    class DynamicShortDialogue(BaseModel):
-        """The dialogue between the host and guest."""
-        scratchpad: str
-        name_of_guest: str
-        dialogue: List[DialogueItemClass] = Field(
-            ..., description="A list of dialogue items, typically between 11 to 17 items"
-        )
-    
-    return DynamicShortDialogue
-
-
-def create_medium_dialogue_schema(host_name: str = "Sam"):
-    """Create a MediumDialogue schema with custom host name."""
-    
-    DialogueItemClass = create_dynamic_dialogue_item(host_name)
-    
-    class DynamicMediumDialogue(BaseModel):
-        """The dialogue between the host and guest."""
-        scratchpad: str
-        name_of_guest: str
-        dialogue: List[DialogueItemClass] = Field(
-            ..., description="A list of dialogue items, typically between 19 to 29 items"
-        )
-    
-    return DynamicMediumDialogue
-
-
-def create_long_dialogue_schema(host_name: str = "Sam"):
-    """Create a LongDialogue schema with custom host name."""
-    
-    DialogueItemClass = create_dynamic_dialogue_item(host_name)
-    
-    class DynamicLongDialogue(BaseModel):
-        """The dialogue between the host and guest for long-form content."""
-        scratchpad: str
-        name_of_guest: str
-        dialogue: List[DialogueItemClass] = Field(
-            ..., description="A list of dialogue items, typically between 70 to 100 items for comprehensive coverage"
-        )
-    
-    return DynamicLongDialogue
+# Schema selection function
+def get_dialogue_schema(length: str):
+    """Get the appropriate dialogue schema based on length."""
+    schemas = {
+        "short": ShortDialogue,
+        "medium": MediumDialogue,
+        "long": LongDialogue
+    }
+    return schemas.get(length, MediumDialogue)

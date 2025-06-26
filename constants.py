@@ -30,7 +30,7 @@ ERROR_MESSAGE_TOO_LONG = "The total content is too long. Please ensure the combi
 # Google Gemini API-related constants
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 GEMINI_MAX_TOKENS = 65536
-GEMINI_MODEL_ID = "gemini-2.5-flash-preview-05-20"
+GEMINI_MODEL_ID = "gemini-2.5-flash"
 GEMINI_TEMPERATURE = 0.1
 
 # Google Cloud Text-to-Speech API-related constants
@@ -38,48 +38,190 @@ GOOGLE_CLOUD_API_KEY = os.getenv("GOOGLE_CLOUD_API_KEY")
 GOOGLE_TTS_RETRY_ATTEMPTS = 3
 GOOGLE_TTS_RETRY_DELAY = 5  # in seconds
 
-# Voice configuration for different speakers using Chirp HD voices
-# Chirp HD voices are the latest generation powered by LLMs, perfect for conversational applications
+# Enhanced voice configuration with multiple high-quality voices per gender/language
+# Using ONLY Chirp HD and Chirp 3 HD voices - prioritizing Chirp HD where available
 
-# Base voice mappings by gender and language
+# Female voices - at least 2 per language, using only Chirp HD and Chirp 3 HD voices
 FEMALE_VOICES = {
-    "English": "en-US-Chirp-HD-F",
-    "Spanish": "es-ES-Chirp-HD-F", 
-    "French": "fr-FR-Chirp-HD-F",
-    "German": "de-DE-Chirp-HD-F",
-    "Italian": "it-IT-Chirp-HD-F",
-    "Portuguese": "pt-BR-Chirp-HD-F",
-    "Dutch": "nl-NL-Chirp-HD-F",
-    "Polish": "pl-PL-Chirp-HD-F",
-    "Russian": "ru-RU-Chirp-HD-F",
-    "Japanese": "ja-JP-Chirp-HD-F",
-    "Korean": "ko-KR-Chirp-HD-F",
-    "Chinese": "zh-CN-Chirp-HD-F",
-    "Hindi": "hi-IN-Chirp-HD-F",
-    "Turkish": "tr-TR-Chirp-HD-F",
+    "English": [
+        "en-US-Chirp-HD-F",
+        "en-US-Chirp-HD-O",
+        "en-US-Chirp3-HD-Achernar",
+        "en-US-Chirp3-HD-Aoede"
+    ],
+    "Spanish": [
+        "es-ES-Chirp-HD-F",
+        "es-ES-Chirp-HD-O",
+        "es-ES-Chirp3-HD-Achernar",
+        "es-ES-Chirp3-HD-Aoede"
+    ],
+    "French": [
+        "fr-FR-Chirp-HD-F",
+        "fr-FR-Chirp-HD-O",
+        "fr-FR-Chirp3-HD-Achernar",
+        "fr-FR-Chirp3-HD-Aoede"
+    ],
+    "German": [
+        "de-DE-Chirp-HD-F",
+        "de-DE-Chirp-HD-O", 
+        "de-DE-Chirp3-HD-Achernar",
+        "de-DE-Chirp3-HD-Aoede"
+    ],
+    "Italian": [
+        "it-IT-Chirp-HD-F",
+        "it-IT-Chirp-HD-O",
+        "it-IT-Chirp3-HD-Achernar",
+        "it-IT-Chirp3-HD-Aoede"
+    ],
+    "Portuguese": [
+        "pt-BR-Chirp3-HD-Achernar", 
+        "pt-BR-Chirp3-HD-Aoede",
+        "pt-BR-Chirp3-HD-Callirrhoe",
+        "pt-BR-Chirp3-HD-Despina"
+    ],
+    "Dutch": [
+        "nl-NL-Chirp3-HD-Achernar",
+        "nl-NL-Chirp3-HD-Aoede",
+        "nl-NL-Chirp3-HD-Callirrhoe",
+        "nl-NL-Chirp3-HD-Despina"
+    ],
+    "Polish": [
+        "pl-PL-Chirp3-HD-Achernar",
+        "pl-PL-Chirp3-HD-Aoede", 
+        "pl-PL-Chirp3-HD-Callirrhoe",
+        "pl-PL-Chirp3-HD-Despina"
+    ],
+    "Russian": [
+        "ru-RU-Chirp3-HD-Achernar",
+        "ru-RU-Chirp3-HD-Aoede",
+        "ru-RU-Chirp3-HD-Callirrhoe",
+        "ru-RU-Chirp3-HD-Despina"
+    ],
+    "Japanese": [
+        "ja-JP-Chirp3-HD-Achernar",
+        "ja-JP-Chirp3-HD-Aoede",
+        "ja-JP-Chirp3-HD-Callirrhoe",
+        "ja-JP-Chirp3-HD-Despina"
+    ],
+    "Korean": [
+        "ko-KR-Chirp3-HD-Achernar",
+        "ko-KR-Chirp3-HD-Aoede",
+        "ko-KR-Chirp3-HD-Callirrhoe",
+        "ko-KR-Chirp3-HD-Despina"
+    ],
+    "Chinese": [
+        "cmn-CN-Chirp3-HD-Achernar",
+        "cmn-CN-Chirp3-HD-Aoede", 
+        "cmn-CN-Chirp3-HD-Callirrhoe",
+        "cmn-CN-Chirp3-HD-Despina"
+    ],
+    "Hindi": [
+        "hi-IN-Chirp3-HD-Achernar",
+        "hi-IN-Chirp3-HD-Aoede",
+        "hi-IN-Chirp3-HD-Callirrhoe",
+        "hi-IN-Chirp3-HD-Despina"
+    ],
+    "Turkish": [
+        "tr-TR-Chirp3-HD-Achernar",
+        "tr-TR-Chirp3-HD-Aoede",
+        "tr-TR-Chirp3-HD-Callirrhoe",
+        "tr-TR-Chirp3-HD-Despina"
+    ],
 }
 
+# Male voices - at least 2 per language, using only Chirp HD and Chirp 3 HD voices  
 MALE_VOICES = {
-    "English": "en-US-Chirp-HD-D",
-    "Spanish": "es-ES-Chirp-HD-D",
-    "French": "fr-FR-Chirp-HD-D", 
-    "German": "de-DE-Chirp-HD-D",
-    "Italian": "it-IT-Chirp-HD-D",
-    "Portuguese": "pt-BR-Chirp-HD-D",
-    "Dutch": "nl-NL-Chirp-HD-D",
-    "Polish": "pl-PL-Chirp-HD-D",
-    "Russian": "ru-RU-Chirp-HD-D",
-    "Japanese": "ja-JP-Chirp-HD-D",
-    "Korean": "ko-KR-Chirp-HD-D",
-    "Chinese": "zh-CN-Chirp-HD-D",
-    "Hindi": "hi-IN-Chirp-HD-D",
-    "Turkish": "tr-TR-Chirp-HD-D",
+    "English": [
+        "en-US-Chirp-HD-D",
+        "en-US-Chirp3-HD-Achird",
+        "en-US-Chirp3-HD-Charon",
+        "en-US-Chirp3-HD-Algenib"
+    ],
+    "Spanish": [
+        "es-ES-Chirp-HD-D", 
+        "es-ES-Chirp3-HD-Achird",
+        "es-ES-Chirp3-HD-Charon",
+        "es-ES-Chirp3-HD-Algenib"
+    ],
+    "French": [
+        "fr-FR-Chirp-HD-D",
+        "fr-FR-Chirp3-HD-Achird",
+        "fr-FR-Chirp3-HD-Charon",
+        "fr-FR-Chirp3-HD-Algenib"
+    ],
+    "German": [
+        "de-DE-Chirp-HD-D", 
+        "de-DE-Chirp3-HD-Achird",
+        "de-DE-Chirp3-HD-Charon",
+        "de-DE-Chirp3-HD-Algenib"
+    ],
+    "Italian": [
+        "it-IT-Chirp-HD-D",
+        "it-IT-Chirp3-HD-Achird",
+        "it-IT-Chirp3-HD-Charon",
+        "it-IT-Chirp3-HD-Algenib"
+    ],
+    "Portuguese": [
+        "pt-BR-Chirp3-HD-Achird",
+        "pt-BR-Chirp3-HD-Charon", 
+        "pt-BR-Chirp3-HD-Algenib",
+        "pt-BR-Chirp3-HD-Enceladus"
+    ],
+    "Dutch": [
+        "nl-NL-Chirp3-HD-Achird",
+        "nl-NL-Chirp3-HD-Charon",
+        "nl-NL-Chirp3-HD-Algenib",
+        "nl-NL-Chirp3-HD-Enceladus"
+    ],
+    "Polish": [
+        "pl-PL-Chirp3-HD-Achird",
+        "pl-PL-Chirp3-HD-Charon",
+        "pl-PL-Chirp3-HD-Algenib",
+        "pl-PL-Chirp3-HD-Enceladus"
+    ],
+    "Russian": [
+        "ru-RU-Chirp3-HD-Achird",
+        "ru-RU-Chirp3-HD-Charon",
+        "ru-RU-Chirp3-HD-Algenib",
+        "ru-RU-Chirp3-HD-Enceladus"
+    ],
+    "Japanese": [
+        "ja-JP-Chirp3-HD-Achird",
+        "ja-JP-Chirp3-HD-Charon",
+        "ja-JP-Chirp3-HD-Algenib",
+        "ja-JP-Chirp3-HD-Enceladus"
+    ],
+    "Korean": [
+        "ko-KR-Chirp3-HD-Achird", 
+        "ko-KR-Chirp3-HD-Charon",
+        "ko-KR-Chirp3-HD-Algenib",
+        "ko-KR-Chirp3-HD-Enceladus"
+    ],
+    "Chinese": [
+        "cmn-CN-Chirp3-HD-Achird",
+        "cmn-CN-Chirp3-HD-Charon",
+        "cmn-CN-Chirp3-HD-Algenib",
+        "cmn-CN-Chirp3-HD-Enceladus"
+    ],
+    "Hindi": [
+        "hi-IN-Chirp3-HD-Achird",
+        "hi-IN-Chirp3-HD-Charon", 
+        "hi-IN-Chirp3-HD-Algenib",
+        "hi-IN-Chirp3-HD-Enceladus"
+    ],
+    "Turkish": [
+        "tr-TR-Chirp3-HD-Achird",
+        "tr-TR-Chirp3-HD-Charon",
+        "tr-TR-Chirp3-HD-Algenib",
+        "tr-TR-Chirp3-HD-Enceladus"
+    ],
 }
 
 def get_voice_assignments():
     """
     Randomly assign genders to host and guest roles for variety.
     This ensures we always have one male and one female voice, but the roles are mixed up.
+    Now uses multiple voice options per gender for better variety.
     """
     import random
     
@@ -100,6 +242,7 @@ def get_voice_assignments():
 def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str = "random"):
     """
     Assign genders to host and guest roles based on user preferences.
+    Now supports multiple voice options per gender for better variety.
     
     Args:
         host_gender: "male", "female", or "random"
@@ -127,6 +270,27 @@ def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str 
         "Host (Sam)": host_voices,
         "Guest": guest_voices,
     }
+
+def get_random_voice_for_language_and_gender(language: str, gender: str):
+    """
+    Get a random voice for a specific language and gender.
+    
+    Args:
+        language: Language name (e.g., "English", "Spanish")
+        gender: "male" or "female"
+    
+    Returns:
+        str: Voice name (e.g., "en-US-Chirp3-HD-Achernar")
+    """
+    import random
+    
+    voices = FEMALE_VOICES if gender.lower() == "female" else MALE_VOICES
+    
+    if language in voices:
+        return random.choice(voices[language])
+    else:
+        # Fallback to English if language not found
+        return random.choice(voices["English"])
 
 # Legacy variable for backwards compatibility - will be dynamically assigned
 GOOGLE_TTS_VOICES = get_voice_assignments()

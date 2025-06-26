@@ -8,6 +8,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     setupFormHandling();
     setupFileUpload();
+    setupScriptFileUpload();
     setupFormValidation();
 }
 
@@ -134,6 +135,81 @@ function updateFileDisplays() {
     }
 }
 
+function setupScriptFileUpload() {
+    const scriptInput = document.getElementById('script_file');
+    if (!scriptInput) return;
+
+    // Script file drag and drop functionality
+    const scriptDropZone = scriptInput.closest('.border-dashed');
+    
+    if (scriptDropZone) {
+        scriptDropZone.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            scriptDropZone.classList.add('border-indigo-500', 'bg-indigo-500/10');
+        });
+
+        scriptDropZone.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            scriptDropZone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+        });
+
+        scriptDropZone.addEventListener('drop', function(e) {
+            e.preventDefault();
+            scriptDropZone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                // Only accept the first file for script upload
+                const file = files[0];
+                const fileName = file.name.toLowerCase();
+                
+                // Validate file type
+                if (fileName.endsWith('.md') || fileName.endsWith('.txt')) {
+                    // Create a new FileList with just this file
+                    const dt = new DataTransfer();
+                    dt.items.add(file);
+                    scriptInput.files = dt.files;
+                    
+                    // Trigger change event
+                    scriptInput.dispatchEvent(new Event('change', { bubbles: true }));
+                } else {
+                    alert('Please upload only .md or .txt script files.');
+                }
+            }
+        });
+    }
+
+    // Script file input change handler
+    scriptInput.addEventListener('change', function() {
+        updateScriptFileDisplay();
+    });
+}
+
+function updateScriptFileDisplay() {
+    const scriptInput = document.getElementById('script_file');
+    const scriptDisplay = document.getElementById('script-file-display');
+    const scriptFileName = document.getElementById('script-file-name');
+    
+    if (!scriptInput || !scriptDisplay || !scriptFileName) return;
+    
+    const file = scriptInput.files[0];
+    
+    if (file) {
+        scriptDisplay.classList.remove('hidden');
+        scriptFileName.textContent = `📝 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+        
+        // Check if other content sources are also provided
+        if (typeof checkContentPriority === 'function') {
+            checkContentPriority();
+        }
+    } else {
+        scriptDisplay.classList.add('hidden');
+        if (typeof checkContentPriority === 'function') {
+            checkContentPriority();
+        }
+    }
+}
+
 function setupFormValidation() {
     // Real-time validation for file size
     const fileInput = document.getElementById('pdf_files');
@@ -166,6 +242,34 @@ function setupFormValidation() {
                 
                 console.log(`File "${file.name}" passed validation`);
             }
+        });
+    }
+    
+    // Script file validation
+    const scriptInput = document.getElementById('script_file');
+    if (scriptInput) {
+        scriptInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+            
+            const maxSize = 5 * 1024 * 1024; // 5MB for script files
+            const fileName = file.name.toLowerCase();
+            
+            console.log(`Validating script file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+            
+            if (file.size > maxSize) {
+                alert(`Script file "${file.name}" is too large. Maximum size is 5MB.`);
+                this.value = '';
+                return;
+            }
+            
+            if (!fileName.endsWith('.md') && !fileName.endsWith('.txt')) {
+                alert(`File "${file.name}" is not a valid script file. Please upload only .md or .txt files.`);
+                this.value = '';
+                return;
+            }
+            
+            console.log(`Script file "${file.name}" passed validation`);
         });
     }
 }
@@ -255,6 +359,7 @@ function clearForm() {
     if (form) {
         form.reset();
         updateFileDisplays(); // Reset file display
+        updateScriptFileDisplay(); // Reset script file display
     }
 }
 
