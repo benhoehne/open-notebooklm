@@ -66,8 +66,12 @@ def generate_podcast(
     # Clear voice cache to ensure fresh voice assignments for this podcast
     clear_voice_cache()
     
-    # Get voice assignments based on user preferences
-    voice_assignments = get_custom_voice_assignments(host_gender, guest_gender)
+    # Get current voice provider setting
+    from constants import get_voice_provider_setting
+    voice_provider = get_voice_provider_setting()
+    
+    # Get voice assignments based on user preferences and provider
+    voice_assignments = get_custom_voice_assignments(host_gender, guest_gender, voice_provider)
     
     # Log voice assignments (now using list-based structure)
     host_voice_sample = list(voice_assignments['Host (Sam)'].values())[0][0] if voice_assignments['Host (Sam)'] else "Unknown"
@@ -400,8 +404,12 @@ def synthesize_audio_from_script(
     # Clear voice cache to ensure fresh voice assignments for this podcast
     clear_voice_cache()
     
-    # Get voice assignments based on user preferences
-    voice_assignments = get_custom_voice_assignments(host_gender, guest_gender)
+    # Get current voice provider setting
+    from constants import get_voice_provider_setting
+    voice_provider = get_voice_provider_setting()
+    
+    # Get voice assignments based on user preferences and provider
+    voice_assignments = get_custom_voice_assignments(host_gender, guest_gender, voice_provider)
     
     # Parse the script content to extract dialogue
     lines = script_content.split('\n')

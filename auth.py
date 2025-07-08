@@ -79,9 +79,24 @@ def logout():
 @login_required
 @admin_required
 def admin():
+    from constants import get_voice_provider_setting, ELEVENLABS_API_KEY, GOOGLE_CLOUD_API_KEY
+    
     pending_users = User.query.filter_by(is_approved=False).all()
     approved_users = User.query.filter_by(is_approved=True).all()
-    return render_template('admin.html', pending_users=pending_users, approved_users=approved_users)
+    
+    # Get current voice provider setting
+    current_voice_provider = get_voice_provider_setting()
+    
+    # Check API key availability
+    google_available = bool(GOOGLE_CLOUD_API_KEY)
+    elevenlabs_available = bool(ELEVENLABS_API_KEY)
+    
+    return render_template('admin.html', 
+                         pending_users=pending_users, 
+                         approved_users=approved_users,
+                         current_voice_provider=current_voice_provider,
+                         google_available=google_available,
+                         elevenlabs_available=elevenlabs_available)
 
 @auth.route('/admin/approve/<int:user_id>')
 @login_required
@@ -114,4 +129,35 @@ def revoke_user(user_id):
     user.is_approved = False
     db.session.commit()
     flash(f'Access revoked for user {user.name} ({user.email}).')
-    return redirect(url_for('auth.admin')) 
+    return redirect(url_for('auth.admin'))
+
+@auth.route('/admin/voice-provider', methods=['POST'])
+@login_required
+@admin_required
+def set_voice_provider():
+    from constants import set_voice_provider_setting, ELEVENLABS_API_KEY, GOOGLE_CLOUD_API_KEY
+    
+    provider = request.form.get('voice_provider')
+    
+    # Validate provider
+    if provider not in ['google', 'elevenlabs']:
+        flash('Invalid voice provider selected.')
+        return redirect(url_for('auth.admin'))
+    
+    # Check if the selected provider has API key configured
+    if provider == 'elevenlabs' and not ELEVENLABS_API_KEY:
+        flash('ElevenLabs API key is not configured. Please add ELEVENLABS_API_KEY to your environment variables.')
+        return redirect(url_for('auth.admin'))
+    
+    if provider == 'google' and not GOOGLE_CLOUD_API_KEY:
+        flash('Google Cloud API key is not configured. Please add GOOGLE_CLOUD_API_KEY to your environment variables.')
+        return redirect(url_for('auth.admin'))
+    
+    # Set the voice provider
+    if set_voice_provider_setting(provider):
+        provider_name = 'Google Cloud Text-to-Speech' if provider == 'google' else 'ElevenLabs'
+        flash(f'Voice provider successfully changed to {provider_name}.')
+    else:
+        flash('Failed to update voice provider setting.')
+    
+    return redirect(url_for('auth.admin'))

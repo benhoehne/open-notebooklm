@@ -195,16 +195,24 @@ def clear_voice_cache():
     """Clear the voice cache to ensure fresh voice assignments for new podcasts."""
     if hasattr(_use_google_tts, '_voice_cache'):
         _use_google_tts._voice_cache.clear()
+    if hasattr(_use_elevenlabs_tts, '_voice_cache'):
+        _use_elevenlabs_tts._voice_cache.clear()
 
 
 def generate_podcast_audio(
     text: str, speaker: str, language: str, voice_assignments: dict = None
 ) -> str:
-    """Generate audio for podcast using Google Cloud Text-to-Speech."""
-    if not google_tts_client:
-        raise ValueError("Google Cloud TTS client not initialized. Please set GOOGLE_CLOUD_API_KEY environment variable.")
+    """Generate audio for podcast using the configured voice provider."""
+    from constants import get_voice_provider_setting
     
-    return _use_google_tts(text, speaker, language, voice_assignments)
+    voice_provider = get_voice_provider_setting()
+    
+    if voice_provider == "elevenlabs":
+        return _use_elevenlabs_tts(text, speaker, language, voice_assignments)
+    else:  # default to google
+        if not google_tts_client:
+            raise ValueError("Google Cloud TTS client not initialized. Please set GOOGLE_CLOUD_API_KEY environment variable.")
+        return _use_google_tts(text, speaker, language, voice_assignments)
 
 
 def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: dict = None) -> str:
@@ -299,6 +307,100 @@ def _use_google_tts(text: str, speaker: str, language: str, voice_assignments: d
             time.sleep(GOOGLE_TTS_RETRY_DELAY)
 
 
+def _use_elevenlabs_tts(text: str, speaker: str, language: str, voice_assignments: dict = None) -> str:
+    """Generate audio using ElevenLabs Text-to-Speech."""
+    from constants import ELEVENLABS_API_KEY, ELEVENLABS_RETRY_ATTEMPTS, ELEVENLABS_RETRY_DELAY
+    
+    if not ELEVENLABS_API_KEY:
+        raise ValueError("ElevenLabs API key not initialized. Please set ELEVENLABS_API_KEY environment variable.")
+    
+    # Use provided voice assignments or fallback to the default
+    voices_to_use = voice_assignments if voice_assignments else {}
+    
+    # Get the appropriate voice for the speaker and language
+    speaker_voices = voices_to_use.get(speaker, {})
+    
+    # Get list of voices for this language
+    voice_list = speaker_voices.get(language, [])
+    if not voice_list:
+        # Fallback to English if language not supported
+        voice_list = speaker_voices.get("English", [])
+    
+    if not voice_list:
+        raise ValueError(f"No ElevenLabs voices available for speaker {speaker} and language {language}")
+    
+    # Check if we have a selected voice for this speaker/language combination stored
+    # This ensures consistent voice selection throughout the podcast
+    cache_key = f"{speaker}_{language}"
+    if not hasattr(_use_elevenlabs_tts, '_voice_cache'):
+        _use_elevenlabs_tts._voice_cache = {}
+    
+    if cache_key in _use_elevenlabs_tts._voice_cache:
+        voice_id = _use_elevenlabs_tts._voice_cache[cache_key]
+    else:
+        # Select a voice that's not already used by other speakers
+        import random
+        used_voices = set(_use_elevenlabs_tts._voice_cache.values())
+        available_voices = [v for v in voice_list if v not in used_voices]
+        
+        # If all voices are used, fall back to any voice
+        if not available_voices:
+            available_voices = voice_list
+            
+        voice_id = random.choice(available_voices)
+        _use_elevenlabs_tts._voice_cache[cache_key] = voice_id
+    
+    # ElevenLabs API endpoint
+    url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
+    
+    headers = {
+        "Accept": "audio/mpeg",
+        "Content-Type": "application/json",
+        "xi-api-key": ELEVENLABS_API_KEY
+    }
+    
+    data = {
+        "text": text,
+        "model_id": "eleven_multilingual_v2",
+        "voice_settings": {
+            "stability": 0.5,
+            "similarity_boost": 0.5,
+            "style": 0.0,
+            "use_speaker_boost": True
+        }
+    }
+    
+    for attempt in range(ELEVENLABS_RETRY_ATTEMPTS):
+        try:
+            response = requests.post(url, json=data, headers=headers, timeout=60)
+            response.raise_for_status()
+            
+            # Save the audio to a file
+            import os
+            import uuid
+            
+            # Ensure our custom temp directory exists and is writable
+            os.makedirs(TEMP_AUDIO_DIR, exist_ok=True)
+            
+            # Create a unique filename to avoid conflicts
+            unique_filename = f"elevenlabs_audio_{uuid.uuid4().hex}.mp3"
+            temp_file_path = os.path.join(TEMP_AUDIO_DIR, unique_filename)
+            
+            # Write the audio content directly to the file
+            try:
+                with open(temp_file_path, 'wb') as audio_file:
+                    audio_file.write(response.content)
+            except (PermissionError, OSError) as e:
+                raise Exception(f"Permission denied: Unable to create temporary audio file. Please ensure the application has write permissions to the temporary directory: {e}")
+            
+            return temp_file_path
+            
+        except Exception as e:
+            if attempt == ELEVENLABS_RETRY_ATTEMPTS - 1:  # Last attempt
+                raise Exception(f"ElevenLabs TTS failed after {ELEVENLABS_RETRY_ATTEMPTS} attempts: {e}")
+            time.sleep(ELEVENLABS_RETRY_DELAY)
+
+
 def generate_vtt_content(dialogue_items, audio_segments):
     """Generate WebVTT content from dialogue items and their corresponding audio segments."""
     vtt_content = "WEBVTT\n\n"
@@ -350,16 +452,17 @@ def cleanup_temp_audio_files(max_age_hours=24):
         current_time = time.time()
         max_age_seconds = max_age_hours * 3600
         
-        # Clean up TTS audio files
-        for file_path in glob.glob(os.path.join(TEMP_AUDIO_DIR, "tts_audio_*.mp3")):
-            try:
-                if os.path.isfile(file_path):
-                    file_age = current_time - os.path.getmtime(file_path)
-                    if file_age > max_age_seconds:
-                        os.remove(file_path)
-            except OSError:
-                # If we can't remove the file, just continue
-                continue
+        # Clean up TTS audio files (both Google and ElevenLabs)
+        for pattern in ["tts_audio_*.mp3", "elevenlabs_audio_*.mp3"]:
+            for file_path in glob.glob(os.path.join(TEMP_AUDIO_DIR, pattern)):
+                try:
+                    if os.path.isfile(file_path):
+                        file_age = current_time - os.path.getmtime(file_path)
+                        if file_age > max_age_seconds:
+                            os.remove(file_path)
+                except OSError:
+                    # If we can't remove the file, just continue
+                    continue
                 
         # Clean up gradio cache directory as well
         from constants import GRADIO_CACHE_DIR, GRADIO_CLEAR_CACHE_OLDER_THAN

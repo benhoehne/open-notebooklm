@@ -38,6 +38,201 @@ GOOGLE_CLOUD_API_KEY = os.getenv("GOOGLE_CLOUD_API_KEY")
 GOOGLE_TTS_RETRY_ATTEMPTS = 3
 GOOGLE_TTS_RETRY_DELAY = 5  # in seconds
 
+# ElevenLabs API-related constants
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY")
+ELEVENLABS_RETRY_ATTEMPTS = 3
+ELEVENLABS_RETRY_DELAY = 5  # in seconds
+
+# ElevenLabs voice configurations
+# Based on available voices from ElevenLabs API
+# Fiona hIu9oVaWQOAlZ60h6mYh
+ELEVENLABS_FEMALE_VOICES = {
+    "English": [
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM"   # Rachel (duplicate for variety)
+    ],
+    "Spanish": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "French": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "German": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Austrian": [
+        "hIu9oVaWQOAlZ60h6mYh",  # Aria (multilingual)
+        "hIu9oVaWQOAlZ60h6mYh",  # Rachel
+        "hIu9oVaWQOAlZ60h6mYh",  # Domi
+        "hIu9oVaWQOAlZ60h6mYh"   # Aria
+    ],
+    "Italian": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Portuguese": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Dutch": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Polish": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Russian": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Japanese": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Korean": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Chinese": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Hindi": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+    "Turkish": [
+        "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
+        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "AZnzlk1XvdvUeBnXmlld",  # Domi
+        "9BWtsMINqrJLrRacOk9x"   # Aria
+    ],
+}
+
+# Josef: V7NqGAFbGsUB6Tgu9ezH
+ELEVENLABS_MALE_VOICES = {
+    "English": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew (duplicate for variety)
+    ],
+    "Spanish": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "French": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "German": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Austrian": [
+        "V7NqGAFbGsUB6Tgu9ezH",  # Josef (Austrian male)
+        "V7NqGAFbGsUB6Tgu9ezH",  # Drew (multilingual)
+        "V7NqGAFbGsUB6Tgu9ezH",  # Clyde (multilingual)
+        "V7NqGAFbGsUB6Tgu9ezH"   # Paul (multilingual)
+    ],
+    "Italian": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Portuguese": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Dutch": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Polish": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Russian": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Japanese": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Korean": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Chinese": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Hindi": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+    "Turkish": [
+        "29vD33N1CtxCmqQRPOHJ",  # Drew
+        "2EiwWnXFnvU5JabPnv8n",  # Clyde
+        "5Q0t7uMcjvnagumLfvZi",  # Paul
+        "29vD33N1CtxCmqQRPOHJ"   # Drew
+    ],
+}
+
 # Enhanced voice configuration with multiple high-quality voices per gender/language
 # Using ONLY Chirp HD and Chirp 3 HD voices - prioritizing Chirp HD where available
 
@@ -66,6 +261,12 @@ FEMALE_VOICES = {
         "de-DE-Chirp3-HD-Aoede", 
         "de-DE-Chirp3-HD-Autonoe",
         "de-DE-Chirp3-HD-Callirrhoe"
+    ],
+    "Austrian": [
+        "de-AT-Chirp3-HD-Achernar",
+        "de-AT-Chirp3-HD-Aoede",
+        "de-AT-Chirp3-HD-Autonoe",
+        "de-AT-Chirp3-HD-Callirrhoe"
     ],
     "Italian": [
         "it-IT-Chirp-HD-F",
@@ -155,6 +356,12 @@ MALE_VOICES = {
         "de-DE-Chirp3-HD-Charon",
         "de-DE-Chirp3-HD-Algenib"
     ],
+    "Austrian": [
+        "de-AT-Chirp3-HD-Alnilam",
+        "de-AT-Chirp3-HD-Achird",
+        "de-AT-Chirp3-HD-Charon",
+        "de-AT-Chirp3-HD-Algenib"
+    ],
     "Italian": [
         "it-IT-Chirp-HD-D",
         "it-IT-Chirp3-HD-Achird",
@@ -239,32 +446,41 @@ def get_voice_assignments():
             "Guest": FEMALE_VOICES,
         }
 
-def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str = "random"):
+def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str = "random", voice_provider: str = "google"):
     """
     Assign genders to host and guest roles based on user preferences.
     Now supports multiple voice options per gender for better variety.
     
     Args:
         host_gender: "male", "female", or "random"
-        guest_gender: "male", "female", or "random" 
+        guest_gender: "male", "female", or "random"
+        voice_provider: "google" or "elevenlabs"
     """
     import random
     
+    # Select voice sets based on provider
+    if voice_provider == "elevenlabs":
+        male_voices = ELEVENLABS_MALE_VOICES
+        female_voices = ELEVENLABS_FEMALE_VOICES
+    else:  # default to google
+        male_voices = MALE_VOICES
+        female_voices = FEMALE_VOICES
+    
     # Handle host gender
     if host_gender == "male":
-        host_voices = MALE_VOICES
+        host_voices = male_voices
     elif host_gender == "female":
-        host_voices = FEMALE_VOICES
+        host_voices = female_voices
     else:  # random
-        host_voices = random.choice([MALE_VOICES, FEMALE_VOICES])
+        host_voices = random.choice([male_voices, female_voices])
     
     # Handle guest gender  
     if guest_gender == "male":
-        guest_voices = MALE_VOICES
+        guest_voices = male_voices
     elif guest_gender == "female":
-        guest_voices = FEMALE_VOICES
+        guest_voices = female_voices
     else:  # random
-        guest_voices = random.choice([MALE_VOICES, FEMALE_VOICES])
+        guest_voices = random.choice([male_voices, female_voices])
     
     return {
         "Host (Sam)": host_voices,
@@ -292,12 +508,50 @@ def get_random_voice_for_language_and_gender(language: str, gender: str):
         # Fallback to English if language not found
         return random.choice(voices["English"])
 
+def get_voice_provider_setting():
+    """
+    Get the current voice provider setting from the database.
+    Returns 'google' as default if not set.
+    """
+    try:
+        from models import AppSettings
+        setting = AppSettings.query.filter_by(key='voice_provider').first()
+        return setting.value if setting else 'google'
+    except:
+        # Return default if database is not available or not initialized
+        return 'google'
+
+def set_voice_provider_setting(provider: str):
+    """
+    Set the voice provider setting in the database.
+    
+    Args:
+        provider: "google" or "elevenlabs"
+    """
+    try:
+        from models import AppSettings, db
+        setting = AppSettings.query.filter_by(key='voice_provider').first()
+        if setting:
+            setting.value = provider
+        else:
+            setting = AppSettings(
+                key='voice_provider',
+                value=provider,
+                description='Voice synthesis provider (google or elevenlabs)'
+            )
+            db.session.add(setting)
+        db.session.commit()
+        return True
+    except Exception as e:
+        print(f"Error setting voice provider: {e}")
+        return False
+
 # Legacy variable for backwards compatibility - will be dynamically assigned
 GOOGLE_TTS_VOICES = get_voice_assignments()
 
 # Supported languages for Google Cloud TTS
 SUPPORTED_LANGUAGES = [
-    "English", "Spanish", "French", "German", "Italian", "Portuguese", 
+    "English", "Spanish", "French", "German", "Austrian", "Italian", "Portuguese", 
     "Dutch", "Polish", "Russian", "Japanese", "Korean", "Chinese", 
     "Hindi", "Turkish"
 ]

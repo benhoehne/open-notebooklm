@@ -79,6 +79,84 @@
         {% endif %}
     </div>
 
+    <!-- Voice Provider Settings Section -->
+    <div class="bg-gray-800 rounded-lg p-6 mb-8">
+        <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
+            <svg class="w-6 h-6 mr-2 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M7 4a3 3 0 016 0v4a3 3 0 11-6 0V4zm4 10.93A7.001 7.001 0 0017 8a1 1 0 10-2 0A5 5 0 015 8a1 1 0 00-2 0 7.001 7.001 0 006 6.93V17H6a1 1 0 100 2h8a1 1 0 100-2h-3v-2.07z" clip-rule="evenodd"/>
+            </svg>
+            Voice Provider Settings
+        </h3>
+        
+        <div class="mb-4">
+            <p class="text-gray-400 mb-4">Choose the voice synthesis provider for podcast generation:</p>
+            
+            <form method="POST" action="{{ url_for('auth.set_voice_provider') }}" class="space-y-4">
+                <div class="space-y-2">
+                    <label class="flex items-center space-x-3">
+                        <input type="radio" name="voice_provider" value="google" 
+                               {% if current_voice_provider == 'google' %}checked{% endif %}
+                               {% if not google_available %}disabled{% endif %}
+                               class="form-radio h-4 w-4 text-blue-600">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-white">Google Cloud Text-to-Speech</span>
+                            {% if google_available %}
+                                <span class="px-2 py-1 bg-green-600 text-white text-xs rounded">Available</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-red-600 text-white text-xs rounded">API Key Missing</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                    
+                    <label class="flex items-center space-x-3">
+                        <input type="radio" name="voice_provider" value="elevenlabs" 
+                               {% if current_voice_provider == 'elevenlabs' %}checked{% endif %}
+                               {% if not elevenlabs_available %}disabled{% endif %}
+                               class="form-radio h-4 w-4 text-blue-600">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-white">ElevenLabs</span>
+                            {% if elevenlabs_available %}
+                                <span class="px-2 py-1 bg-green-600 text-white text-xs rounded">Available</span>
+                            {% else %}
+                                <span class="px-2 py-1 bg-red-600 text-white text-xs rounded">API Key Missing</span>
+                            {% endif %}
+                        </div>
+                    </label>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button type="submit" 
+                            class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition duration-200">
+                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        Update Voice Provider
+                    </button>
+                    
+                    <div class="text-sm text-gray-400">
+                        Current: 
+                        {% if current_voice_provider == 'elevenlabs' %}
+                            <span class="text-purple-400">ElevenLabs</span>
+                        {% else %}
+                            <span class="text-blue-400">Google Cloud TTS</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </form>
+            
+            {% if not google_available and not elevenlabs_available %}
+                <div class="mt-4 p-4 bg-yellow-900/20 border border-yellow-500/50 text-yellow-300 rounded-lg">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                        </svg>
+                        <span>No voice providers are configured. Please add API keys to your environment variables.</span>
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
     <!-- Approved Users Section -->
     <div class="bg-gray-800 rounded-lg p-6">
         <h3 class="text-xl font-semibold text-white mb-4 flex items-center">
@@ -145,4 +223,4 @@
         </a>
     </div>
 </div>
-{% endblock %} 
+{% endblock %}
