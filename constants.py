@@ -73,8 +73,8 @@ ELEVENLABS_FEMALE_VOICES = {
     ],
     "Austrian": [
         "hIu9oVaWQOAlZ60h6mYh",  # Aria (multilingual)
-        "hIu9oVaWQOAlZ60h6mYh",  # Rachel
-        "hIu9oVaWQOAlZ60h6mYh",  # Domi
+        "N8RXoLEWQWUCCrT8uDK7",  # Rachel
+        "Nzx4EODwcRtz5xESEixO",  # Domi
         "hIu9oVaWQOAlZ60h6mYh"   # Aria
     ],
     "Italian": [
