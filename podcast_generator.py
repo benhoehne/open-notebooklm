@@ -42,6 +42,7 @@ from schema import (
     get_dialogue_schema
 )
 from utils import generate_podcast_audio, generate_script, parse_url, generate_vtt_content, clear_voice_cache
+from h5p_generator import generate_h5p_package
 
 from pydub import AudioSegment
 
@@ -57,7 +58,7 @@ def generate_podcast(
     guest_name: Optional[str] = None,
     host_gender: str = "random",
     guest_gender: str = "random"
-) -> Tuple[str, str]:
+) -> Tuple[str, str, str, str]:
     """Generate the audio and transcript from the PDFs and/or URL."""
 
     text = ""
@@ -238,9 +239,30 @@ def generate_podcast(
         ):
             os.remove(file)
 
+    # Generate H5P package if VTT file was created successfully
+    h5p_file_path = None
+    if vtt_file_path:
+        try:
+            # Create a title for the H5P package
+            h5p_title = f"Podcast - {host_name} & {llm_output.name_of_guest}"
+            
+            # Map language code for H5P (use first 2 characters for language code)
+            language_code = language.lower()[:2] if language else "en"
+            
+            h5p_file_path = generate_h5p_package(
+                audio_file_path=temp_file_path,
+                vtt_file_path=vtt_file_path,
+                language=language_code,
+                title=h5p_title
+            )
+            logger.info(f"Generated H5P package: {h5p_file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to create H5P package: {e}")
+            h5p_file_path = None
+
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temp_file_path, transcript, vtt_file_path
+    return temp_file_path, transcript, vtt_file_path, h5p_file_path
 
 
 def generate_script_only(
@@ -372,7 +394,7 @@ def synthesize_audio_from_script(
     guest_name: str,
     host_gender: str,
     guest_gender: str
-) -> Tuple[str, str]:
+) -> Tuple[str, str, str, str]:
     """Synthesize audio from an edited script."""
     
     # Clear voice cache to ensure fresh voice assignments for this podcast
@@ -501,6 +523,27 @@ def synthesize_audio_from_script(
         logger.warning(f"Failed to create VTT file: {e}")
         vtt_file_path = None
 
+    # Generate H5P package if VTT file was created successfully
+    h5p_file_path = None
+    if vtt_file_path:
+        try:
+            # Create a title for the H5P package
+            h5p_title = f"Podcast - {host_name} & {guest_name}"
+            
+            # Map language code for H5P (use first 2 characters for language code)
+            language_code = language.lower()[:2] if language else "en"
+            
+            h5p_file_path = generate_h5p_package(
+                audio_file_path=temp_file_path,
+                vtt_file_path=vtt_file_path,
+                language=language_code,
+                title=h5p_title
+            )
+            logger.info(f"Generated H5P package: {h5p_file_path}")
+        except Exception as e:
+            logger.warning(f"Failed to create H5P package: {e}")
+            h5p_file_path = None
+
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temp_file_path, transcript, vtt_file_path 
+    return temp_file_path, transcript, vtt_file_path, h5p_file_path

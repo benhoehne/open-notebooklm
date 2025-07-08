@@ -1,0 +1,41 @@
+{
+  "mediumGroup": {
+  },
+  "transcriptFiles": [
+    
+  ],
+  "behaviour": { "maxLines": 10, "showOnLoad": true },
+  "chapters": { "useIVBookmarks": false },
+  "l10n": {
+    "noMedium": "No medium was assigned to the transcript.",
+    "noTranscript": "No transcript was provided.",
+    "troubleWebVTT": "There seems to be something wrong with the WebVTT file. Please consult the browser's development console for more information.",
+    "chapterMarks": "Chapter marks",
+    "unnamedOption": "Unnamed option"
+  },
+  "a11y": {
+    "buttonVisible": "Hide transcript. Currently visible.",
+    "buttonInvisible": "Show transcript. Currently not visible.",
+    "buttonAutoscrollActive": "Turn off autoscroll. Currently active.",
+    "buttonAutoscrollInactive": "Turn on autoscroll. Currently not active.",
+    "buttonAutoscrollDisabled": "Autoscroll option disabled.",
+    "buttonInteractive": "Switch to plaintext view",
+    "buttonPlaintext": "Switch to interactive transcript view.",
+    "buttonModeDisabled": "Mode switching disabled.",
+    "buttonTimeActive": "Hide start time. Currently shown.",
+    "buttonTimeInactive": "Show start time. Currently not shown.",
+    "buttonTimeDisabled": "Start time option disabled.",
+    "buttonLineBreakActive": "Hide line breaks. Currently shown.",
+    "buttonLineBreakInactive": "Show line breaks. Currently not shown.",
+    "buttonLineBreakDisabled": "Line break option disabled.",
+    "buttonChapterMarksOpen": "Open chapter marks",
+    "buttonChapterMarksClose": "Close chapter marks",
+    "buttonChapterMarksDisabled": "Chapter marks disabled.",
+    "interactiveTranscript": "Interactive transcript",
+    "selectField": "Select what transcript to display.",
+    "selectFieldDisabled": "Select field disabled.",
+    "enterToHighlight": "Enter a query to highlight relevant text.",
+    "searchboxDisabled": "Search box disabled.",
+    "close": "Close"
+  }
+}

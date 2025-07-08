@@ -7,6 +7,8 @@ import os
 import shutil
 import uuid
 import logging
+import threading
+import atexit
 from pathlib import Path
 from werkzeug.utils import secure_filename
 from typing import List, Optional, Tuple
@@ -14,7 +16,7 @@ from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
 # Third-party imports
-from flask import Flask, render_template, request, send_from_directory
+from flask import Flask, render_template, request, send_from_directory, after_this_request
 from flask_login import LoginManager, login_required
 from loguru import logger
 
@@ -118,6 +120,46 @@ def setup_logging(app):
 
 # Set up logging
 setup_logging(app)
+
+# Background cleanup scheduler
+cleanup_scheduler = None
+
+def start_background_cleanup():
+    """Start background cleanup task that runs every hour"""
+    global cleanup_scheduler
+    
+    def run_cleanup():
+        try:
+            app.logger.info('Running scheduled temp audio cleanup')
+            cleanup_temp_audio_files()
+            app.logger.info('Scheduled temp audio cleanup completed')
+        except Exception as e:
+            app.logger.error(f'Error during scheduled cleanup: {e}')
+        
+        # Schedule next cleanup in 1 hour (3600 seconds)
+        global cleanup_scheduler
+        cleanup_scheduler = threading.Timer(3600.0, run_cleanup)
+        cleanup_scheduler.daemon = True
+        cleanup_scheduler.start()
+    
+    # Start the first cleanup cycle
+    cleanup_scheduler = threading.Timer(3600.0, run_cleanup)  # First run after 1 hour
+    cleanup_scheduler.daemon = True
+    cleanup_scheduler.start()
+    app.logger.info('Background cleanup scheduler started (runs every hour)')
+
+def stop_background_cleanup():
+    """Stop background cleanup task"""
+    global cleanup_scheduler
+    if cleanup_scheduler:
+        cleanup_scheduler.cancel()
+        app.logger.info('Background cleanup scheduler stopped')
+
+# Start background cleanup when app starts
+start_background_cleanup()
+
+# Ensure cleanup stops when app shuts down
+atexit.register(stop_background_cleanup)
 
 def allowed_file(filename):
     """Check if the uploaded file is a PDF"""
@@ -246,7 +288,7 @@ def generate_podcast():
             app.logger.info(f'Synthesizing audio with host: {host_name}, guest: {final_guest_name}, language: {language}')
             
             # Synthesize audio from provided script
-            audio_file_path, transcript, vtt_file_path = synthesize_audio_from_script(
+            audio_file_path, transcript, vtt_file_path, h5p_file_path = synthesize_audio_from_script(
                 script_content,
                 language,
                 host_name,
@@ -259,7 +301,7 @@ def generate_podcast():
         else:
             # Generate podcast using existing core function
             app.logger.info('Starting podcast generation...')
-            audio_file_path, transcript, vtt_file_path = generate_podcast_core(
+            audio_file_path, transcript, vtt_file_path, h5p_file_path = generate_podcast_core(
                 files=uploaded_files,
                 url=url,
                 question=question,
@@ -310,6 +352,20 @@ def generate_podcast():
                 app.logger.error(f'Failed to move VTT file: {e}')
                 vtt_filename = None
 
+        # Move H5P file to static folder
+        h5p_filename = None
+        if h5p_file_path and audio_filename:
+            h5p_filename = audio_filename.replace('.mp3', '.h5p')
+            final_h5p_path = os.path.join(app.config['AUDIO_FOLDER'], h5p_filename)
+            
+            try:
+                shutil.copy2(h5p_file_path, final_h5p_path)
+                os.remove(h5p_file_path)  # Clean up the original temp file
+                app.logger.info(f'H5P file saved: {h5p_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move H5P file: {e}')
+                h5p_filename = None
+
         # Clean up uploaded files
         for file_path in uploaded_files:
             try:
@@ -328,6 +384,7 @@ def generate_podcast():
             return render_template('index.html',
                                  audio_file=audio_filename,
                                  vtt_file=vtt_filename,
+                                 h5p_file=h5p_filename,
                                  transcript=transcript,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES,
@@ -554,7 +611,7 @@ def synthesize_audio():
         from podcast_generator import synthesize_audio_from_script
         
         # Synthesize audio from edited script
-        audio_file_path, transcript, vtt_file_path = synthesize_audio_from_script(
+        audio_file_path, transcript, vtt_file_path, h5p_file_path = synthesize_audio_from_script(
             edited_script,
             generation_params['language'],
             generation_params['host_name'],
@@ -597,6 +654,20 @@ def synthesize_audio():
                 app.logger.error(f'Failed to move VTT file: {e}')
                 vtt_filename = None
 
+        # Move H5P file to static folder
+        h5p_filename = None
+        if h5p_file_path and audio_filename:
+            h5p_filename = audio_filename.replace('.mp3', '.h5p')
+            final_h5p_path = os.path.join(app.config['AUDIO_FOLDER'], h5p_filename)
+            
+            try:
+                shutil.copy2(h5p_file_path, final_h5p_path)
+                os.remove(h5p_file_path)  # Clean up the original temp file
+                app.logger.info(f'H5P file saved: {h5p_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move H5P file: {e}')
+                h5p_filename = None
+
         # Log completion time
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -607,6 +678,7 @@ def synthesize_audio():
             return render_template('index.html',
                                  audio_file=audio_filename,
                                  vtt_file=vtt_filename,
+                                 h5p_file=h5p_filename,
                                  transcript=transcript,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES,
@@ -641,12 +713,31 @@ def synthesize_audio():
 
 @app.route('/static/audio/<filename>')
 def download_audio(filename):
-    """Serve audio files - with fallback for Synology systems"""
+    """Serve audio files - with fallback for Synology systems and post-download cleanup"""
     app.logger.info(f'Audio file requested: {filename}')
+    
+    def cleanup_after_download():
+        """Clean up temporary files after download is complete"""
+        try:
+            app.logger.info('Running post-download temp audio cleanup')
+            cleanup_temp_audio_files(max_age_hours=1)  # More aggressive cleanup after download
+            app.logger.info('Post-download cleanup completed')
+        except Exception as e:
+            app.logger.error(f'Error during post-download cleanup: {e}')
+    
+    # Schedule cleanup to run after the response is sent
+    @after_this_request
+    def run_cleanup(response):
+        # Use a separate thread to avoid blocking the response
+        cleanup_thread = threading.Thread(target=cleanup_after_download)
+        cleanup_thread.daemon = True
+        cleanup_thread.start()
+        return response
     
     # First try serving from the configured audio folder
     static_audio_path = os.path.join(app.config['AUDIO_FOLDER'], filename)
     if os.path.exists(static_audio_path):
+        app.logger.info(f'Serving audio file from static folder: {filename}')
         return send_from_directory(app.config['AUDIO_FOLDER'], filename)
     
     # Fallback: try serving from gradio cache directory (temp location)
@@ -655,8 +746,14 @@ def download_audio(filename):
         app.logger.info(f'Serving audio file from temp location: {filename}')
         return send_from_directory(GRADIO_CACHE_DIR, filename)
     
-    # If file not found in either location, return 404
-    app.logger.error(f'Audio file not found: {filename}')
+    # Try serving from temp audio directory as well
+    temp_audio_dir_path = os.path.join(TEMP_AUDIO_DIR, filename)
+    if os.path.exists(temp_audio_dir_path):
+        app.logger.info(f'Serving audio file from temp audio directory: {filename}')
+        return send_from_directory(TEMP_AUDIO_DIR, filename)
+    
+    # If file not found in any location, return 404
+    app.logger.error(f'Audio file not found in any location: {filename}')
     return render_template('index.html',
                          error="Audio file not found.",
                          title=APP_TITLE,
@@ -701,4 +798,4 @@ def not_implemented(e):
 if __name__ == '__main__':
     # Development server
     app.logger.info('Starting Flask development server on port 7000')
-    app.run(debug=True, host='127.0.0.1', port=7000) 
+    app.run(debug=True, host='127.0.0.1', port=7000)

@@ -182,3 +182,4 @@ logs/
 
 # Already included above but keeping for clarity
 node_modules/
+!transcript_template/*/dist
