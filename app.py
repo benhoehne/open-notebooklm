@@ -797,5 +797,6 @@ def not_implemented(e):
 
 if __name__ == '__main__':
     # Development server
-    app.logger.info('Starting Flask development server on port 7000')
-    app.run(debug=True, host='127.0.0.1', port=7000)
+    port = int(os.environ.get('FLASK_RUN_PORT', 7000))
+    app.logger.info(f'Starting Flask development server on port {port}')
+    app.run(debug=True, host='127.0.0.1', port=port)

@@ -62,10 +62,10 @@ FEMALE_VOICES = {
         "fr-FR-Chirp3-HD-Aoede"
     ],
     "German": [
-        "de-DE-Chirp-HD-F",
-        "de-DE-Chirp-HD-O", 
         "de-DE-Chirp3-HD-Achernar",
-        "de-DE-Chirp3-HD-Aoede"
+        "de-DE-Chirp3-HD-Aoede", 
+        "de-DE-Chirp3-HD-Autonoe",
+        "de-DE-Chirp3-HD-Callirrhoe"
     ],
     "Italian": [
         "it-IT-Chirp-HD-F",
@@ -150,7 +150,7 @@ MALE_VOICES = {
         "fr-FR-Chirp3-HD-Algenib"
     ],
     "German": [
-        "de-DE-Chirp-HD-D", 
+        "de-DE-Chirp3-HD-Alnilam", 
         "de-DE-Chirp3-HD-Achird",
         "de-DE-Chirp3-HD-Charon",
         "de-DE-Chirp3-HD-Algenib"
