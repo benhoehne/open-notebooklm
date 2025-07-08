@@ -11,6 +11,7 @@ import threading
 import atexit
 from pathlib import Path
 from werkzeug.utils import secure_filename
+from werkzeug.exceptions import ClientDisconnected
 from typing import List, Optional, Tuple
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
@@ -48,6 +49,10 @@ app.config['AUDIO_FOLDER'] = 'static/audio'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max-size
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Add timeout configuration to handle slow uploads
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
+app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # 1 hour session timeout
 
 # Ensure upload and audio directories exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
@@ -439,6 +444,9 @@ def generate_script_only():
     start_time = datetime.now()
     app.logger.info('Script generation request started')
     
+    # Initialize uploaded_files to prevent UnboundLocalError
+    uploaded_files = []
+    
     try:
         # Handle script file upload first
         script_content = None
@@ -475,7 +483,6 @@ def generate_script_only():
             app.logger.info('No script_file key found in request.files')
         
         # Handle PDF file uploads (same as before)
-        uploaded_files = []
         if 'pdf_files' in request.files:
             files = request.files.getlist('pdf_files')
             
@@ -569,16 +576,21 @@ def generate_script_only():
     except Exception as e:
         app.logger.error(f"Error generating script: {str(e)}", exc_info=True)
         
-        # Clean up uploaded files on error
-        for file_path in uploaded_files:
-            try:
-                os.remove(file_path)
-            except OSError:
-                pass
+        # Clean up uploaded files on error (only if uploaded_files exists and has items)
+        if 'uploaded_files' in locals():
+            for file_path in uploaded_files:
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
         
-        error_msg = str(e)
-        if "Error" in error_msg:
-            error_msg = error_msg.replace("Error: ", "")
+        # Handle specific client disconnect errors
+        if "ClientDisconnected" in str(type(e).__name__):
+            error_msg = "The connection was interrupted. This may happen with large files or slow connections. Please try again with smaller files or check your internet connection."
+        else:
+            error_msg = str(e)
+            if "Error" in error_msg:
+                error_msg = error_msg.replace("Error: ", "")
         
         return render_template('index.html',
                              error=error_msg,
@@ -794,6 +806,15 @@ def not_implemented(e):
                           error="Service temporarily unavailable due to system permissions. Please ensure the application has write access to temporary directories, or contact your system administrator.",
                           title=APP_TITLE,
                           examples=UI_EXAMPLES), 501
+
+@app.errorhandler(ClientDisconnected)
+def handle_client_disconnected(e):
+    """Handle client disconnection errors"""
+    app.logger.warning(f"Client disconnected during request: {request.url}")
+    return render_template('index.html',
+                          error="The connection was interrupted. This may happen with large files or slow connections. Please try again with smaller files or check your internet connection.",
+                          title=APP_TITLE,
+                          examples=UI_EXAMPLES), 400
 
 if __name__ == '__main__':
     # Development server

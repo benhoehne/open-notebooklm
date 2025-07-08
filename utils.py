@@ -74,23 +74,37 @@ CRITICAL REQUIREMENTS:
 - Ensure each dialogue item contributes meaningfully to the conversation
 """
 
-    # Call the LLM for the first time
-    first_draft_dialogue = call_llm(enhanced_system_prompt, input_text, output_model)
+    # Call the LLM for the first time with a shorter timeout for faster response
+    print("Generating initial script draft...")
+    first_draft_dialogue = call_llm(enhanced_system_prompt, input_text, output_model, timeout=45)
 
-    # Call the LLM a second time to improve the dialogue
-    system_prompt_with_dialogue = f"""{enhanced_system_prompt}
+    # Try to improve the dialogue with a second call, but make it optional
+    # If it fails or times out, we'll use the first draft
+    try:
+        print("Improving script quality...")
+        system_prompt_with_dialogue = f"""{enhanced_system_prompt}
 
 Here is the first draft of the dialogue you provided:
 {first_draft_dialogue.model_dump_json()}
 
 MAINTAIN THE SAME SPEAKER NAMES: Host="{host_name}", Guest="{guest_name}"
 """
-    final_dialogue = call_llm(system_prompt_with_dialogue, "Please improve the dialogue. Make it more natural and engaging. Keep the same speaker names and ensure all text fields are non-empty.", output_model)
+        final_dialogue = call_llm(
+            system_prompt_with_dialogue, 
+            "Please improve the dialogue. Make it more natural and engaging. Keep the same speaker names and ensure all text fields are non-empty.", 
+            output_model,
+            timeout=30  # Shorter timeout for the improvement call
+        )
+        print("Script improvement completed successfully.")
+        return final_dialogue
+        
+    except Exception as e:
+        print(f"Script improvement failed ({str(e)}), using initial draft.")
+        # If the second call fails, return the first draft
+        return first_draft_dialogue
 
-    return final_dialogue
 
-
-def call_llm(system_prompt: str, text: str, dialogue_format: Any) -> Any:
+def call_llm(system_prompt: str, text: str, dialogue_format: Any, timeout: int = 60) -> Any:
     """Call the LLM with the given prompt and dialogue format."""
     if not gemini_client:
         raise ValueError("Gemini client not initialized. Please set GEMINI_API_KEY or GOOGLE_API_KEY environment variable.")
@@ -98,31 +112,66 @@ def call_llm(system_prompt: str, text: str, dialogue_format: Any) -> Any:
     # Combine system prompt and user text for Gemini
     combined_prompt = f"{system_prompt}\n\nUser Input:\n{text}"
     
-    # Use the new Google Gen AI SDK with structured output (correct format)
-    response = gemini_client.models.generate_content(
-        model=GEMINI_MODEL_ID,
-        contents=combined_prompt,
-        config={
-            "temperature": GEMINI_TEMPERATURE,
-            "max_output_tokens": GEMINI_MAX_TOKENS,
-            "response_mime_type": "application/json",
-            "response_schema": dialogue_format,
-        }
-    )
+    import signal
+    import threading
     
-    # Use the parsed response directly (recommended approach)
-    if hasattr(response, 'parsed') and response.parsed is not None:
-        return response.parsed
+    class TimeoutError(Exception):
+        pass
     
-    # Fallback: Parse the response text manually if .parsed is not available
-    response_text = response.text.strip()
-    if response_text.startswith('```json'):
-        response_text = response_text[7:]  # Remove ```json
-    if response_text.endswith('```'):
-        response_text = response_text[:-3]  # Remove ```
-    response_text = response_text.strip()
+    def timeout_handler(signum, frame):
+        raise TimeoutError("LLM call timed out")
     
-    return dialogue_format.model_validate_json(response_text)
+    result = None
+    exception = None
+    
+    def make_request():
+        nonlocal result, exception
+        try:
+            # Use the new Google Gen AI SDK with structured output (correct format)
+            response = gemini_client.models.generate_content(
+                model=GEMINI_MODEL_ID,
+                contents=combined_prompt,
+                config={
+                    "temperature": GEMINI_TEMPERATURE,
+                    "max_output_tokens": GEMINI_MAX_TOKENS,
+                    "response_mime_type": "application/json",
+                    "response_schema": dialogue_format,
+                }
+            )
+            
+            # Use the parsed response directly (recommended approach)
+            if hasattr(response, 'parsed') and response.parsed is not None:
+                result = response.parsed
+            else:
+                # Fallback: Parse the response text manually if .parsed is not available
+                response_text = response.text.strip()
+                if response_text.startswith('```json'):
+                    response_text = response_text[7:]  # Remove ```json
+                if response_text.endswith('```'):
+                    response_text = response_text[:-3]  # Remove ```
+                response_text = response_text.strip()
+                
+                result = dialogue_format.model_validate_json(response_text)
+        except Exception as e:
+            exception = e
+    
+    # Use threading for timeout handling (more reliable than signal on all platforms)
+    thread = threading.Thread(target=make_request)
+    thread.daemon = True
+    thread.start()
+    thread.join(timeout)
+    
+    if thread.is_alive():
+        # Thread is still running, which means it timed out
+        raise TimeoutError(f"LLM call timed out after {timeout} seconds")
+    
+    if exception:
+        raise exception
+    
+    if result is None:
+        raise Exception("LLM call failed without returning a result")
+    
+    return result
 
 
 def parse_url(url: str) -> str:
@@ -328,6 +377,3 @@ def cleanup_temp_audio_files(max_age_hours=24):
     except Exception:
         # Don't let cleanup failures affect the main application
         pass
-
-
-

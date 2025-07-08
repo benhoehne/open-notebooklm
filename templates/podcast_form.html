@@ -248,13 +248,7 @@
 </form>
 
 <script>
-function clearForm() {
-  document.getElementById('podcast-form').reset();
-  // Hide file display
-  document.getElementById('selected-files-display').classList.add('hidden');
-  document.getElementById('upload-display-area').style.display = 'block';
-}
-
+// Define generateScript function for the button
 function generateScript() {
   // Change form action to generate script only
   const form = document.getElementById('podcast-form');
@@ -262,62 +256,19 @@ function generateScript() {
   form.action = "{{ url_for('generate_script_only') }}";
   
   // Show loading
-  showLoading();
+  if (typeof showLoading === 'function') {
+    showLoading();
+  }
   
   // Submit form
   form.submit();
   
-  // Restore original action
+  // Restore original action (though page will reload)
   form.action = originalAction;
 }
 
-// File upload handling
-document.getElementById('pdf_files').addEventListener('change', function(e) {
-  const files = Array.from(e.target.files);
-  const displayArea = document.getElementById('upload-display-area');
-  const selectedDisplay = document.getElementById('selected-files-display');
-  const fileCountDisplay = document.getElementById('file-count-display');
-  const fileListDisplay = document.getElementById('file-list-display');
-  
-  if (files.length > 0) {
-    displayArea.style.display = 'none';
-    selectedDisplay.classList.remove('hidden');
-    
-    fileCountDisplay.textContent = `${files.length} file${files.length > 1 ? 's' : ''} selected`;
-    
-    fileListDisplay.innerHTML = '';
-    files.forEach(file => {
-      const fileItem = document.createElement('div');
-      fileItem.className = 'text-xs text-indigo-200 truncate';
-      fileItem.textContent = `📄 ${file.name} (${(file.size / 1024 / 1024).toFixed(1)} MB)`;
-      fileListDisplay.appendChild(fileItem);
-    });
-  } else {
-    displayArea.style.display = 'block';
-    selectedDisplay.classList.add('hidden');
-  }
-});
-
-// Script file import handling
-document.getElementById('script_file').addEventListener('change', function(e) {
-  const file = e.target.files[0];
-  const scriptDisplay = document.getElementById('script-file-display');
-  const scriptFileName = document.getElementById('script-file-name');
-  
-  if (file) {
-    scriptDisplay.classList.remove('hidden');
-    scriptFileName.textContent = `📝 ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
-    
-    // Check if other content sources are also provided
-    checkContentPriority();
-  } else {
-    scriptDisplay.classList.add('hidden');
-    checkContentPriority();
-  }
-});
-
-// Add function to check content priority and show warnings
-function checkContentPriority() {
+// Define checkContentPriority function globally
+window.checkContentPriority = function() {
   const scriptFile = document.getElementById('script_file').files[0];
   const pdfFiles = document.getElementById('pdf_files').files;
   const urlField = document.getElementById('url').value.trim();
@@ -350,7 +301,13 @@ function checkContentPriority() {
   }
 }
 
-// Also check when PDF files or URL change
-document.getElementById('pdf_files').addEventListener('change', checkContentPriority);
-document.getElementById('url').addEventListener('input', checkContentPriority);
-</script> 
+// Note: File upload handling is managed by app.js
+// We only need to ensure checkContentPriority is called when needed
+document.addEventListener('DOMContentLoaded', function() {
+  // Add listener for URL changes
+  const urlInput = document.getElementById('url');
+  if (urlInput) {
+    urlInput.addEventListener('input', checkContentPriority);
+  }
+});
+</script>
