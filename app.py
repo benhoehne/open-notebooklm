@@ -840,6 +840,7 @@ def handle_client_disconnected(e):
 
 if __name__ == '__main__':
     # Development server
-    port = int(os.environ.get('FLASK_RUN_PORT', 7000))
+    port = int(os.environ.get('FLASK_RUN_PORT', 7042))
+    host = str(os.environ.get('FLASK_HOST', 'localhost'))
     app.logger.info(f'Starting Flask development server on port {port}')
-    app.run(debug=True, host='127.0.0.1', port=port)
+    app.run(debug=True, host=host, port=port)
