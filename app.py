@@ -597,6 +597,28 @@ def generate_script_only():
                              title=APP_TITLE,
                              examples=UI_EXAMPLES)
 
+@app.route('/script-editor')
+@login_required
+def script_editor():
+    """Direct access to script editor without content generation"""
+    app.logger.info('Script editor accessed directly')
+    
+    # Create default generation parameters
+    import json
+    generation_params = {
+        'language': 'English',
+        'host_name': 'Sam',
+        'guest_name': 'AI Assistant',
+        'host_gender': 'random',
+        'guest_gender': 'random'
+    }
+    
+    # Render script editor with empty script
+    return render_template('script_editor.html',
+                         script='',
+                         generation_params=json.dumps(generation_params),
+                         title=APP_TITLE)
+
 @app.route('/synthesize-audio', methods=['POST'])
 @login_required
 def synthesize_audio():

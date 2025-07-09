@@ -17,8 +17,74 @@
     <!-- Script Editor Form -->
     <form id="script-form" method="POST" action="{{ url_for('synthesize_audio') }}" class="space-y-6">
         <!-- Hidden field to store generation parameters -->
-        <input type="hidden" name="generation_params" value="{{ generation_params }}">
+        <input type="hidden" name="generation_params" value="{{ generation_params }}" id="generation_params">
         
+        <!-- Reduced Settings Section -->
+        <div class="bg-gray-800/50 rounded-lg border border-gray-600/50 p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-lg font-semibold text-white">🎙️ Podcast Settings</h2>
+                <p class="text-sm text-gray-400">Customize the language and voices of your podcast hosts.</p>
+            </div>
+            
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                <!-- Language Selection -->
+                <div>
+                    <label for="language" class="block text-sm font-medium text-white mb-2">Language</label>
+                    <div class="grid grid-cols-1">
+                        <select id="language" name="language" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
+                            <option value="English">🇺🇸 English</option>
+                            <option value="Spanish">🇪🇸 Spanish</option>
+                            <option value="French">🇫🇷 French</option>
+                            <option value="German">🇩🇪 German</option>
+                            <option value="Austrian">🇦🇹 Austrian</option>
+                            <option value="Italian">🇮🇹 Italian</option>
+                            <option value="Portuguese">🇵🇹 Portuguese</option>
+                            <option value="Dutch">🇳🇱 Dutch</option>
+                            <option value="Polish">🇵🇱 Polish</option>
+                            <option value="Russian">🇷🇺 Russian</option>
+                            <option value="Japanese">🇯🇵 Japanese</option>
+                            <option value="Korean">🇰🇷 Korean</option>
+                            <option value="Chinese">🇨🇳 Chinese</option>
+                            <option value="Hindi">🇮🇳 Hindi</option>
+                        </select>
+                        <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-400 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Host Voice -->
+                <div>
+                    <label for="host_gender" class="block text-sm font-medium text-white mb-2">Host Voice</label>
+                    <div class="grid grid-cols-1">
+                        <select id="host_gender" name="host_gender" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
+                            <option value="random">🎲 Random</option>
+                            <option value="male">👨 Male Voice</option>
+                            <option value="female">👩 Female Voice</option>
+                        </select>
+                        <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-400 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Guest Voice -->
+                <div>
+                    <label for="guest_gender" class="block text-sm font-medium text-white mb-2">Guest Voice</label>
+                    <div class="grid grid-cols-1">
+                        <select id="guest_gender" name="guest_gender" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
+                            <option value="random">🎲 Random</option>
+                            <option value="male">👨 Male Voice</option>
+                            <option value="female">👩 Female Voice</option>
+                        </select>
+                        <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-400 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <div class="bg-gray-800/50 rounded-lg border border-gray-600/50 p-6">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-lg font-semibold text-white">Podcast Script</h2>
@@ -27,6 +93,25 @@
                         <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
                     </svg>
                     <span>Use **Speaker:** format for each line</span>
+                </div>
+            </div>
+
+            <!-- Script Upload Section (only show if script is empty) -->
+            <div id="script-upload-section" class="mb-6" style="display: none;">
+                <div class="flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-8">
+                    <div class="text-center">
+                        <svg class="mx-auto size-10 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
+                        </svg>
+                        <div class="mt-3 flex text-sm/6 text-gray-400">
+                            <label for="script-upload" class="relative cursor-pointer rounded-md bg-gray-900 font-semibold text-white hover:text-indigo-500">
+                                <span>Upload your script</span>
+                                <input id="script-upload" type="file" accept=".md,.txt" class="sr-only">
+                            </label>
+                            <p class="pl-1">or start writing below</p>
+                        </div>
+                        <p class="text-xs/5 text-gray-400">Markdown (.md) or text (.txt) files</p>
+                    </div>
                 </div>
             </div>
             
@@ -108,6 +193,20 @@ document.addEventListener('DOMContentLoaded', function() {
     // Auto-focus the editor
     editor.focus();
     
+    // Initialize settings from generation parameters
+    initializeSettings();
+    
+    // Show upload section if script is empty
+    toggleUploadSection();
+    
+    // Add event listeners for settings changes
+    document.getElementById('language').addEventListener('change', updateGenerationParams);
+    document.getElementById('host_gender').addEventListener('change', updateGenerationParams);
+    document.getElementById('guest_gender').addEventListener('change', updateGenerationParams);
+    
+    // Add event listener for script upload
+    document.getElementById('script-upload').addEventListener('change', handleScriptUpload);
+    
     // Form submission handler
     document.getElementById('script-form').addEventListener('submit', function(e) {
         // Make sure the textarea is updated with CodeMirror content
@@ -115,12 +214,52 @@ document.addEventListener('DOMContentLoaded', function() {
             editor.save();
         }
         
+        // Update generation parameters before submission
+        updateGenerationParams();
+        
         // Show loading
         if (typeof showLoading === 'function') {
             showLoading();
         }
     });
 });
+
+function initializeSettings() {
+    try {
+        const paramsInput = document.getElementById('generation_params');
+        const params = JSON.parse(paramsInput.value);
+        
+        // Set the form values from generation parameters
+        if (params.language) {
+            document.getElementById('language').value = params.language;
+        }
+        if (params.host_gender) {
+            document.getElementById('host_gender').value = params.host_gender;
+        }
+        if (params.guest_gender) {
+            document.getElementById('guest_gender').value = params.guest_gender;
+        }
+    } catch (e) {
+        console.error('Error initializing settings:', e);
+    }
+}
+
+function updateGenerationParams() {
+    try {
+        const paramsInput = document.getElementById('generation_params');
+        const params = JSON.parse(paramsInput.value);
+        
+        // Update parameters with current form values
+        params.language = document.getElementById('language').value;
+        params.host_gender = document.getElementById('host_gender').value;
+        params.guest_gender = document.getElementById('guest_gender').value;
+        
+        // Update the hidden input
+        paramsInput.value = JSON.stringify(params);
+    } catch (e) {
+        console.error('Error updating generation parameters:', e);
+    }
+}
 
 function resetScript() {
     if (confirm('Are you sure you want to reset the script to its original version? All changes will be lost.')) {
@@ -159,6 +298,50 @@ function importScript() {
     document.getElementById('import-script').click();
 }
 
+function toggleUploadSection() {
+    const uploadSection = document.getElementById('script-upload-section');
+    const currentContent = editor ? editor.getValue() : document.getElementById('script-editor').value;
+    
+    if (currentContent.trim() === '') {
+        uploadSection.style.display = 'block';
+        // Update placeholder text
+        if (editor) {
+            editor.setOption('placeholder', 'Start writing your script here or upload a file above...');
+        } else {
+            document.getElementById('script-editor').placeholder = 'Start writing your script here or upload a file above...';
+        }
+    } else {
+        uploadSection.style.display = 'none';
+        if (editor) {
+            editor.setOption('placeholder', 'Loading script...');
+        } else {
+            document.getElementById('script-editor').placeholder = 'Loading script...';
+        }
+    }
+}
+
+function handleScriptUpload(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const content = event.target.result;
+        if (editor) {
+            editor.setValue(content);
+        } else {
+            document.getElementById('script-editor').value = content;
+        }
+        
+        // Hide upload section after successful upload
+        toggleUploadSection();
+    };
+    reader.readAsText(file);
+    
+    // Reset file input
+    e.target.value = '';
+}
+
 // Handle script file import
 document.getElementById('import-script').addEventListener('change', function(e) {
     const file = e.target.files[0];
@@ -177,6 +360,9 @@ document.getElementById('import-script').addEventListener('change', function(e) 
         } else {
             document.getElementById('script-editor').value = content;
         }
+        
+        // Update upload section visibility
+        toggleUploadSection();
     };
     reader.readAsText(file);
     
@@ -184,4 +370,4 @@ document.getElementById('import-script').addEventListener('change', function(e) 
     e.target.value = '';
 });
 </script>
-{% endblock %} 
+{% endblock %}

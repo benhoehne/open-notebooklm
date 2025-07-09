@@ -11,7 +11,7 @@ load_dotenv()
 
 # Key constants
 APP_TITLE = "Pod GPT 🎙️"
-CHARACTER_LIMIT = 150_000
+CHARACTER_LIMIT = 250_000
 
 # Gradio-related constants
 GRADIO_CACHE_DIR = "./gradio_cached_examples/tmp/"

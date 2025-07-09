@@ -32,6 +32,7 @@ You are a world-class podcast producer tasked with transforming the provided inp
    - Ensure the guest's responses are substantiated by the input text, avoiding unsupported claims
    - Maintain a PG-rated conversation appropriate for all audiences
    - Avoid any marketing or self-promotional content from the guest
+   - In languages with formal and informal pronouns (e.g. Du vs. Sie) use the informal (e.g. Du) address between host and guest.
    - The host concludes the conversation
 
 4. **Summarize Key Insights:**
