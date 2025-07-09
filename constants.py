@@ -72,14 +72,14 @@ ELEVENLABS_FEMALE_VOICES = {
         "9BWtsMINqrJLrRacOk9x"   # Aria
     ],
     "Austrian": [
-        "hIu9oVaWQOAlZ60h6mYh",  # Aria (multilingual)
-        "N8RXoLEWQWUCCrT8uDK7",  # Rachel
-        "Nzx4EODwcRtz5xESEixO",  # Domi
-        "hIu9oVaWQOAlZ60h6mYh"   # Aria
+        "hIu9oVaWQOAlZ60h6mYh",  # Fiona
+        "N8RXoLEWQWUCCrT8uDK7",  # Ariana Paul
+        "Nzx4EODwcRtz5xESEixO",  # Sissi
+        "N8RXoLEWQWUCCrT8uDK7"   # Emilia Roth
     ],
     "Italian": [
         "9BWtsMINqrJLrRacOk9x",  # Aria (multilingual)
-        "21m00Tcm4TlvDq8ikWAM",  # Rachel
+        "GrxaTqjVxJOeKg6g85i1",  # Rachel
         "AZnzlk1XvdvUeBnXmlld",  # Domi
         "9BWtsMINqrJLrRacOk9x"   # Aria
     ],
@@ -167,9 +167,9 @@ ELEVENLABS_MALE_VOICES = {
     ],
     "Austrian": [
         "V7NqGAFbGsUB6Tgu9ezH",  # Josef (Austrian male)
-        "V7NqGAFbGsUB6Tgu9ezH",  # Drew (multilingual)
-        "V7NqGAFbGsUB6Tgu9ezH",  # Clyde (multilingual)
-        "V7NqGAFbGsUB6Tgu9ezH"   # Paul (multilingual)
+        "sTeT0bXBeK6hi9pnfwhh",  # Tom
+        "dK79aRgLcnV6DfJxT39z",  # Robert Kreiner
+        "TNBqK9B8EYhsR7cg6s2P"   # Horvath aus Wien
     ],
     "Italian": [
         "29vD33N1CtxCmqQRPOHJ",  # Drew
