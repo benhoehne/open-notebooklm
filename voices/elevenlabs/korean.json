@@ -1,0 +1,36 @@
+{
+  "provider": "elevenlabs",
+  "language": "Korean",
+  "voices": [
+    {
+      "id": "9BWtsMINqrJLrRacOk9x",
+      "name": "Aria",
+      "gender": "female"
+    },
+    {
+      "id": "AZnzlk1XvdvUeBnXmlld",
+      "name": "Domi",
+      "gender": "female"
+    },
+    {
+      "id": "21m00Tcm4TlvDq8ikWAM",
+      "name": "Rachel",
+      "gender": "female"
+    },
+    {
+      "id": "2EiwWnXFnvU5JabPnv8n",
+      "name": "Clyde",
+      "gender": "male"
+    },
+    {
+      "id": "29vD33N1CtxCmqQRPOHJ",
+      "name": "Drew",
+      "gender": "male"
+    },
+    {
+      "id": "5Q0t7uMcjvnagumLfvZi",
+      "name": "Paul",
+      "gender": "male"
+    }
+  ]
+}

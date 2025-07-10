@@ -429,6 +429,8 @@ def get_voice_assignments():
     Randomly assign genders to host and guest roles for variety.
     This ensures we always have one male and one female voice, but the roles are mixed up.
     Now uses multiple voice options per gender for better variety.
+    
+    DEPRECATED: Use voice_manager.get_voice_assignments() instead.
     """
     import random
     
@@ -450,6 +452,8 @@ def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str 
     """
     Assign genders to host and guest roles based on user preferences.
     Now supports multiple voice options per gender for better variety.
+    
+    DEPRECATED: Use voice_manager.get_voice_assignments() instead.
     
     Args:
         host_gender: "male", "female", or "random"
@@ -490,6 +494,8 @@ def get_custom_voice_assignments(host_gender: str = "random", guest_gender: str 
 def get_random_voice_for_language_and_gender(language: str, gender: str):
     """
     Get a random voice for a specific language and gender.
+    
+    DEPRECATED: Use voice_manager.get_random_voice() instead.
     
     Args:
         language: Language name (e.g., "English", "Spanish")

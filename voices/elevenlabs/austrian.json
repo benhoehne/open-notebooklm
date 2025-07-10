@@ -1,0 +1,51 @@
+{
+  "provider": "elevenlabs",
+  "language": "Austrian",
+  "voices": [
+    {
+      "id": "N8RXoLEWQWUCCrT8uDK7",
+      "name": "Ariana Paul",
+      "gender": "female"
+    },
+    {
+      "id": "hIu9oVaWQOAlZ60h6mYh",
+      "name": "Fiona",
+      "gender": "female"
+    },
+    {
+      "id": "Nzx4EODwcRtz5xESEixO",
+      "name": "Sissi",
+      "gender": "female"
+    },
+    {
+      "id": "v3V1d2rk6528UrLKRuy8",
+      "name": "Susi",
+      "gender": "female"
+    },
+    {
+      "id": "a5qh6GnXXXlZQrD05l99",
+      "name": "Martin R. Pro",
+      "gender": "male"
+    },
+    {
+      "id": "TNBqK9B8EYhsR7cg6s2P",
+      "name": "Horvath",
+      "gender": "male"
+    },
+    {
+      "id": "V7NqGAFbGsUB6Tgu9ezH",
+      "name": "Josef",
+      "gender": "male"
+    },
+    {
+      "id": "dK79aRgLcnV6DfJxT39z",
+      "name": "Robert Kreiner",
+      "gender": "male"
+    },
+    {
+      "id": "sTeT0bXBeK6hi9pnfwhh",
+      "name": "Tom",
+      "gender": "male"
+    }
+  ]
+}

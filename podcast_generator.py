@@ -56,8 +56,9 @@ def generate_podcast(
     language: str,
     host_name: Optional[str] = "Sam",
     guest_name: Optional[str] = None,
-    host_gender: str = "random",
-    guest_gender: str = "random"
+    voice_provider: str = "google_tts",
+    host_voice: str = "random",
+    guest_voice: str = "random"
 ) -> Tuple[str, str, str, str]:
     """Generate the audio and transcript from the PDFs and/or URL."""
 
@@ -66,12 +67,41 @@ def generate_podcast(
     # Clear voice cache to ensure fresh voice assignments for this podcast
     clear_voice_cache()
     
-    # Get current voice provider setting
-    from constants import get_voice_provider_setting
-    voice_provider = get_voice_provider_setting()
+    # Import voice manager for new voice system
+    from voice_manager import voice_manager
     
-    # Get voice assignments based on user preferences and provider
-    voice_assignments = get_custom_voice_assignments(host_gender, guest_gender, voice_provider)
+    # Handle voice assignments using new voice system
+    if host_voice in ['random', 'male', 'female'] or guest_voice in ['random', 'male', 'female']:
+        # Use legacy gender-based assignment for compatibility
+        host_gender = 'male' if host_voice == 'male' else 'female' if host_voice == 'female' else 'random'
+        guest_gender = 'male' if guest_voice == 'male' else 'female' if guest_voice == 'female' else 'random'
+        
+        # Get voice assignments based on user preferences and provider
+        from constants import get_custom_voice_assignments
+        voice_assignments = get_custom_voice_assignments(host_gender, guest_gender, voice_provider)
+    else:
+        # Use specific voice IDs
+        # Get voice data for host
+        host_voice_data = voice_manager.get_voice_by_id(voice_provider, language, host_voice)
+        guest_voice_data = voice_manager.get_voice_by_id(voice_provider, language, guest_voice)
+        
+        # Fallback to random if specific voices not found
+        if not host_voice_data:
+            host_voice_data = voice_manager.get_random_voice(voice_provider, language, 'random')
+        if not guest_voice_data:
+            guest_voice_data = voice_manager.get_random_voice(voice_provider, language, 'random')
+        
+        # Create voice assignments in the format expected by the audio generation
+        if voice_provider == "elevenlabs":
+            voice_assignments = {
+                "Host (Sam)": {language: [host_voice_data['id']] if host_voice_data else []},
+                "Guest": {language: [guest_voice_data['id']] if guest_voice_data else []}
+            }
+        else:  # google_tts
+            voice_assignments = {
+                "Host (Sam)": {language: [host_voice_data['id']] if host_voice_data else []},
+                "Guest": {language: [guest_voice_data['id']] if guest_voice_data else []}
+            }
     
     # Log voice assignments (now using list-based structure)
     host_voice_sample = list(voice_assignments['Host (Sam)'].values())[0][0] if voice_assignments['Host (Sam)'] else "Unknown"
@@ -396,20 +426,55 @@ def synthesize_audio_from_script(
     language: str,
     host_name: str,
     guest_name: str,
-    host_gender: str,
-    guest_gender: str
+    voice_provider: str = "google_tts",
+    host_voice: str = "random",
+    guest_voice: str = "random"
 ) -> Tuple[str, str, str, str]:
     """Synthesize audio from an edited script."""
     
     # Clear voice cache to ensure fresh voice assignments for this podcast
     clear_voice_cache()
     
-    # Get current voice provider setting
-    from constants import get_voice_provider_setting
-    voice_provider = get_voice_provider_setting()
+    # Import voice manager for new voice system
+    from voice_manager import voice_manager
     
-    # Get voice assignments based on user preferences and provider
-    voice_assignments = get_custom_voice_assignments(host_gender, guest_gender, voice_provider)
+    # Handle voice assignments using new voice system
+    if host_voice in ['random', 'male', 'female'] or guest_voice in ['random', 'male', 'female']:
+        # Use legacy gender-based assignment for compatibility
+        host_gender = 'male' if host_voice == 'male' else 'female' if host_voice == 'female' else 'random'
+        guest_gender = 'male' if guest_voice == 'male' else 'female' if guest_voice == 'female' else 'random'
+        
+        # Get voice assignments based on user preferences and provider
+        from constants import get_custom_voice_assignments
+        voice_assignments = get_custom_voice_assignments(host_gender, guest_gender, voice_provider)
+    else:
+        # Use specific voice IDs
+        # Get voice data for host
+        host_voice_data = voice_manager.get_voice_by_id(voice_provider, language, host_voice)
+        guest_voice_data = voice_manager.get_voice_by_id(voice_provider, language, guest_voice)
+        
+        # Fallback to random if specific voices not found
+        if not host_voice_data:
+            host_voice_data = voice_manager.get_random_voice(voice_provider, language, 'random')
+        if not guest_voice_data:
+            guest_voice_data = voice_manager.get_random_voice(voice_provider, language, 'random')
+        
+        # Create voice assignments in the format expected by the audio generation
+        if voice_provider == "elevenlabs":
+            voice_assignments = {
+                "Host (Sam)": {language: [host_voice_data['id']] if host_voice_data else []},
+                "Guest": {language: [guest_voice_data['id']] if guest_voice_data else []}
+            }
+        else:  # google_tts
+            voice_assignments = {
+                "Host (Sam)": {language: [host_voice_data['id']] if host_voice_data else []},
+                "Guest": {language: [guest_voice_data['id']] if guest_voice_data else []}
+            }
+        
+        # Log voice assignments for debugging
+        logger.info(f"Voice assignments created: {voice_assignments}")
+        logger.info(f"Host voice: {host_voice_data}")
+        logger.info(f"Guest voice: {guest_voice_data}")
     
     # Parse the script content to extract dialogue
     lines = script_content.split('\n')
@@ -419,7 +484,9 @@ def synthesize_audio_from_script(
     current_speaker = None
     current_text = ""
     
-    # Skip everything before the separator
+    # Extract actual host and guest names from the script header
+    actual_host_name = None
+    actual_guest_name = None
     separator_found = False
     
     for line in lines:
@@ -434,16 +501,23 @@ def synthesize_audio_from_script(
             separator_found = True
             continue
             
-        # Skip metadata section before separator
+        # Parse metadata section before separator to get actual names
         if not separator_found:
+            if line.startswith('**Host:**'):
+                actual_host_name = line.replace('**Host:**', '').strip()
+                logger.info(f"Extracted host name from script: {actual_host_name}")
+            elif line.startswith('**Guest:**'):
+                actual_guest_name = line.replace('**Guest:**', '').strip()
+                logger.info(f"Extracted guest name from script: {actual_guest_name}")
             continue
             
         # Check if this is a speaker line
         if line.startswith('**') and ':**' in line:
             # Save previous dialogue item if exists
             if current_speaker and current_text.strip():
-                # Map speaker name back to expected format
-                speaker_format = "Host (Sam)" if current_speaker.lower() == host_name.lower() else "Guest"
+                # Map speaker name back to expected format using actual names
+                speaker_format = "Host (Sam)" if (actual_host_name and current_speaker.lower() == actual_host_name.lower()) else "Guest"
+                logger.info(f"Speaker mapping: '{current_speaker}' -> '{speaker_format}' (actual_host_name: {actual_host_name})")
                 dialogue_items.append({
                     'speaker': speaker_format,
                     'text': current_text.strip()
@@ -463,7 +537,8 @@ def synthesize_audio_from_script(
     
     # Don't forget the last dialogue item
     if current_speaker and current_text.strip():
-        speaker_format = "Host (Sam)" if current_speaker.lower() == host_name.lower() else "Guest"
+        speaker_format = "Host (Sam)" if (actual_host_name and current_speaker.lower() == actual_host_name.lower()) else "Guest"
+        logger.info(f"Final speaker mapping: '{current_speaker}' -> '{speaker_format}' (actual_host_name: {actual_host_name})")
         dialogue_items.append({
             'speaker': speaker_format,
             'text': current_text.strip()

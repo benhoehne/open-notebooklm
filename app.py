@@ -260,13 +260,15 @@ def generate_podcast():
         # Get new parameters for host/guest customization
         host_name = request.form.get('host_name', 'Sam').strip() or 'Sam'
         guest_name = request.form.get('guest_name', '').strip()
-        host_gender = request.form.get('host_gender', 'random')
-        guest_gender = request.form.get('guest_gender', 'random')
+        voice_provider = request.form.get('voice_provider', 'google_tts')
+        host_voice = request.form.get('host_voice', 'random')
+        guest_voice = request.form.get('guest_voice', 'random')
 
         # Log form data
         app.logger.info(f'Generation parameters: files={len(uploaded_files)}, url={bool(url)}, '
                        f'script_file={bool(script_content)}, tone={tone}, length={length}, language={language}, '
-                       f'host_name={host_name}, guest_name={guest_name}, host_gender={host_gender}, guest_gender={guest_gender}')
+                       f'host_name={host_name}, guest_name={guest_name}, voice_provider={voice_provider}, '
+                       f'host_voice={host_voice}, guest_voice={guest_voice}')
         
         # Validate input - now including script_content
         if not uploaded_files and not url and not script_content:
@@ -298,8 +300,9 @@ def generate_podcast():
                 language,
                 host_name,
                 final_guest_name,
-                host_gender,
-                guest_gender
+                voice_provider,
+                host_voice,
+                guest_voice
             )
             
             app.logger.info('Audio synthesis from script completed successfully')
@@ -315,8 +318,9 @@ def generate_podcast():
                 language=language,
                 host_name=host_name,
                 guest_name=guest_name,
-                host_gender=host_gender,
-                guest_gender=guest_gender
+                voice_provider=voice_provider,
+                host_voice=host_voice,
+                guest_voice=guest_voice
             )
             app.logger.info('Podcast generation from content completed successfully')
         
@@ -509,8 +513,9 @@ def generate_script_only():
         # Get host/guest customization
         host_name = request.form.get('host_name', 'Sam').strip() or 'Sam'
         guest_name = request.form.get('guest_name', '').strip()
-        host_gender = request.form.get('host_gender', 'random')
-        guest_gender = request.form.get('guest_gender', 'random')
+        voice_provider = request.form.get('voice_provider', 'google_tts')
+        host_voice = request.form.get('host_voice', 'random')
+        guest_voice = request.form.get('guest_voice', 'random')
         
         # If script content is provided, skip generation and go directly to editor
         if script_content:
@@ -523,8 +528,9 @@ def generate_script_only():
                 'host_name': host_name,
                 'guest_name': guest_name if guest_name else "AI Assistant",
                 'length': length,
-                'host_gender': host_gender,
-                'guest_gender': guest_gender
+                'voice_provider': voice_provider,
+                'host_voice': host_voice,
+                'guest_voice': guest_voice
             }
             
             # Render script editor page with uploaded script
@@ -564,8 +570,9 @@ def generate_script_only():
 
         # Store generation parameters in session for later use
         import json
-        generation_params['host_gender'] = host_gender
-        generation_params['guest_gender'] = guest_gender
+        generation_params['voice_provider'] = voice_provider
+        generation_params['host_voice'] = host_voice
+        generation_params['guest_voice'] = guest_voice
         
         # Render script editor page
         return render_template('script_editor.html',
@@ -609,8 +616,9 @@ def script_editor():
         'language': 'English',
         'host_name': 'Sam',
         'guest_name': 'AI Assistant',
-        'host_gender': 'random',
-        'guest_gender': 'random'
+        'voice_provider': 'google_tts',
+        'host_voice': 'random',
+        'guest_voice': 'random'
     }
     
     # Render script editor with empty script
@@ -650,8 +658,9 @@ def synthesize_audio():
             generation_params['language'],
             generation_params['host_name'],
             generation_params['guest_name'],
-            generation_params['host_gender'],
-            generation_params['guest_gender']
+            generation_params.get('voice_provider', 'google_tts'),
+            generation_params.get('host_voice', 'random'),
+            generation_params.get('guest_voice', 'random')
         )
 
         # Move generated audio to static folder
@@ -744,6 +753,31 @@ def synthesize_audio():
                              error=error_msg,
                              title=APP_TITLE,
                              examples=UI_EXAMPLES)
+
+@app.route('/api/voices/<provider>/<language>')
+@login_required
+def get_voices(provider, language):
+    """API endpoint to get available voices for a provider and language"""
+    try:
+        from voice_manager import voice_manager
+        from flask import jsonify
+        
+        # Validate provider
+        if provider not in ['google_tts', 'elevenlabs']:
+            return jsonify({'error': 'Invalid provider'}), 400
+        
+        # Get voices for the specified provider and language
+        voices = voice_manager.get_voice_options_for_language(provider, language)
+        
+        return jsonify({
+            'provider': provider,
+            'language': language,
+            'voices': voices
+        })
+    
+    except Exception as e:
+        app.logger.error(f'Error getting voices: {e}')
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/static/audio/<filename>')
 def download_audio(filename):

@@ -1,0 +1,46 @@
+{
+  "provider": "google_tts",
+  "language": "Russian",
+  "voices": [
+    {
+      "id": "ru-RU-Chirp3-HD-Aoede",
+      "name": "Aoede",
+      "gender": "female"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Kore",
+      "name": "Kore",
+      "gender": "female"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Leda",
+      "name": "Leda",
+      "gender": "female"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Zephyr",
+      "name": "Zephyr",
+      "gender": "female"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Charon",
+      "name": "Charon",
+      "gender": "male"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Fenrir",
+      "name": "Fenrir",
+      "gender": "male"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Orus",
+      "name": "Orus",
+      "gender": "male"
+    },
+    {
+      "id": "ru-RU-Chirp3-HD-Puck",
+      "name": "Puck",
+      "gender": "male"
+    }
+  ]
+}

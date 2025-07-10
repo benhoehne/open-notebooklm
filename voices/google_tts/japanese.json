@@ -1,0 +1,156 @@
+{
+  "provider": "google_tts",
+  "language": "Japanese",
+  "voices": [
+    {
+      "id": "ja-JP-Chirp3-HD-Achernar",
+      "name": "Achernar",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Aoede",
+      "name": "Aoede",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Autonoe",
+      "name": "Autonoe",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Callirrhoe",
+      "name": "Callirrhoe",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Despina",
+      "name": "Despina",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Erinome",
+      "name": "Erinome",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Gacrux",
+      "name": "Gacrux",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Kore",
+      "name": "Kore",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Laomedeia",
+      "name": "Laomedeia",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Leda",
+      "name": "Leda",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Pulcherrima",
+      "name": "Pulcherrima",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Sulafat",
+      "name": "Sulafat",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Vindemiatrix",
+      "name": "Vindemiatrix",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Zephyr",
+      "name": "Zephyr",
+      "gender": "female"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Achird",
+      "name": "Achird",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Algenib",
+      "name": "Algenib",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Algieba",
+      "name": "Algieba",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Alnilam",
+      "name": "Alnilam",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Charon",
+      "name": "Charon",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Enceladus",
+      "name": "Enceladus",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Fenrir",
+      "name": "Fenrir",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Iapetus",
+      "name": "Iapetus",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Orus",
+      "name": "Orus",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Puck",
+      "name": "Puck",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Rasalgethi",
+      "name": "Rasalgethi",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Sadachbia",
+      "name": "Sadachbia",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Sadaltager",
+      "name": "Sadaltager",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Schedar",
+      "name": "Schedar",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Umbriel",
+      "name": "Umbriel",
+      "gender": "male"
+    },
+    {
+      "id": "ja-JP-Chirp3-HD-Zubenelgenubi",
+      "name": "Zubenelgenubi",
+      "gender": "male"
+    }
+  ]
+}

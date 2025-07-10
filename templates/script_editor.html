@@ -26,7 +26,21 @@
                 <p class="text-sm text-gray-400">Customize the language and voices of your podcast hosts.</p>
             </div>
             
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <!-- Voice Provider -->
+                <div>
+                    <label for="voice_provider" class="block text-sm font-medium text-white mb-2">Voice Provider</label>
+                    <div class="grid grid-cols-1">
+                        <select id="voice_provider" name="voice_provider" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
+                            <option value="google_tts">🔊 Google TTS</option>
+                            <option value="elevenlabs">🎙️ ElevenLabs</option>
+                        </select>
+                        <svg class="pointer-events-none col-start-1 row-start-1 mr-2 size-5 self-center justify-self-end text-gray-400 sm:size-4" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.22 6.22a.75.75 0 0 1 1.06 0L8 8.94l2.72-2.72a.75.75 0 1 1 1.06 1.06l-3.25 3.25a.75.75 0 0 1-1.06 0L4.22 7.28a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                </div>
+
                 <!-- Language Selection -->
                 <div>
                     <label for="language" class="block text-sm font-medium text-white mb-2">Language</label>
@@ -55,9 +69,9 @@
 
                 <!-- Host Voice -->
                 <div>
-                    <label for="host_gender" class="block text-sm font-medium text-white mb-2">Host Voice</label>
+                    <label for="host_voice" class="block text-sm font-medium text-white mb-2">Host Voice</label>
                     <div class="grid grid-cols-1">
-                        <select id="host_gender" name="host_gender" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
+                        <select id="host_voice" name="host_voice" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
                             <option value="random">🎲 Random</option>
                             <option value="male">👨 Male Voice</option>
                             <option value="female">👩 Female Voice</option>
@@ -70,9 +84,9 @@
 
                 <!-- Guest Voice -->
                 <div>
-                    <label for="guest_gender" class="block text-sm font-medium text-white mb-2">Guest Voice</label>
+                    <label for="guest_voice" class="block text-sm font-medium text-white mb-2">Guest Voice</label>
                     <div class="grid grid-cols-1">
-                        <select id="guest_gender" name="guest_gender" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
+                        <select id="guest_voice" name="guest_voice" class="col-start-1 row-start-1 w-full appearance-none rounded-md bg-white/5 py-2 pr-8 pl-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 *:bg-gray-800 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500">
                             <option value="random">🎲 Random</option>
                             <option value="male">👨 Male Voice</option>
                             <option value="female">👩 Female Voice</option>
@@ -200,9 +214,14 @@ document.addEventListener('DOMContentLoaded', function() {
     toggleUploadSection();
     
     // Add event listeners for settings changes
+    document.getElementById('voice_provider').addEventListener('change', updateGenerationParams);
     document.getElementById('language').addEventListener('change', updateGenerationParams);
-    document.getElementById('host_gender').addEventListener('change', updateGenerationParams);
-    document.getElementById('guest_gender').addEventListener('change', updateGenerationParams);
+    document.getElementById('host_voice').addEventListener('change', updateGenerationParams);
+    document.getElementById('guest_voice').addEventListener('change', updateGenerationParams);
+    
+    // Add listeners for voice loading
+    document.getElementById('voice_provider').addEventListener('change', updateVoiceOptions);
+    document.getElementById('language').addEventListener('change', updateVoiceOptions);
     
     // Add event listener for script upload
     document.getElementById('script-upload').addEventListener('change', handleScriptUpload);
@@ -224,21 +243,128 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+// Voice management functions
+let voiceCache = {};
+
+async function loadVoices(provider, language) {
+    const cacheKey = `${provider}_${language}`;
+    
+    if (voiceCache[cacheKey]) {
+        return voiceCache[cacheKey];
+    }
+    
+    try {
+        const response = await fetch(`/api/voices/${provider}/${language}`);
+        const data = await response.json();
+        
+        if (data.error) {
+            console.error('Error loading voices:', data.error);
+            return { male: [], female: [] };
+        }
+        
+        voiceCache[cacheKey] = data.voices;
+        return data.voices;
+    } catch (error) {
+        console.error('Error fetching voices:', error);
+        return { male: [], female: [] };
+    }
+}
+
+function populateVoiceDropdown(selectElement, voices, currentValue) {
+    // Store current value
+    const currentSelection = selectElement.value;
+    
+    // Clear existing options
+    selectElement.innerHTML = '';
+    
+    // Add generic options
+    const randomOption = document.createElement('option');
+    randomOption.value = 'random';
+    randomOption.textContent = '🎲 Random';
+    selectElement.appendChild(randomOption);
+    
+    const maleOption = document.createElement('option');
+    maleOption.value = 'male';
+    maleOption.textContent = '👨 Male Voice';
+    selectElement.appendChild(maleOption);
+    
+    const femaleOption = document.createElement('option');
+    femaleOption.value = 'female';
+    femaleOption.textContent = '👩 Female Voice';
+    selectElement.appendChild(femaleOption);
+    
+    // Add separator
+    const separator = document.createElement('option');
+    separator.disabled = true;
+    separator.textContent = '─────────────────';
+    selectElement.appendChild(separator);
+    
+    // Add male voices
+    if (voices.male && voices.male.length > 0) {
+        const maleGroup = document.createElement('optgroup');
+        maleGroup.label = '👨 Male Voices';
+        voices.male.forEach(voice => {
+            const option = document.createElement('option');
+            option.value = voice.id;
+            option.textContent = `${voice.name} (${voice.gender})`;
+            maleGroup.appendChild(option);
+        });
+        selectElement.appendChild(maleGroup);
+    }
+    
+    // Add female voices
+    if (voices.female && voices.female.length > 0) {
+        const femaleGroup = document.createElement('optgroup');
+        femaleGroup.label = '👩 Female Voices';
+        voices.female.forEach(voice => {
+            const option = document.createElement('option');
+            option.value = voice.id;
+            option.textContent = `${voice.name} (${voice.gender})`;
+            femaleGroup.appendChild(option);
+        });
+        selectElement.appendChild(femaleGroup);
+    }
+    
+    // Restore selection if it still exists
+    if (currentSelection && Array.from(selectElement.options).find(opt => opt.value === currentSelection)) {
+        selectElement.value = currentSelection;
+    }
+}
+
+async function updateVoiceOptions() {
+    const provider = document.getElementById('voice_provider').value;
+    const language = document.getElementById('language').value;
+    
+    const voices = await loadVoices(provider, language);
+    
+    const hostSelect = document.getElementById('host_voice');
+    const guestSelect = document.getElementById('guest_voice');
+    
+    populateVoiceDropdown(hostSelect, voices);
+    populateVoiceDropdown(guestSelect, voices);
+}
+
 function initializeSettings() {
     try {
         const paramsInput = document.getElementById('generation_params');
         const params = JSON.parse(paramsInput.value);
         
         // Set the form values from generation parameters
+        if (params.voice_provider) {
+            document.getElementById('voice_provider').value = params.voice_provider;
+        }
         if (params.language) {
             document.getElementById('language').value = params.language;
         }
-        if (params.host_gender) {
-            document.getElementById('host_gender').value = params.host_gender;
+        if (params.host_voice) {
+            document.getElementById('host_voice').value = params.host_voice;
         }
-        if (params.guest_gender) {
-            document.getElementById('guest_gender').value = params.guest_gender;
+        if (params.guest_voice) {
+            document.getElementById('guest_voice').value = params.guest_voice;
         }
+        
+        // Initialize voice options after setting the values
+        updateVoiceOptions();
     } catch (e) {
         console.error('Error initializing settings:', e);
     }
@@ -250,9 +376,10 @@ function updateGenerationParams() {
         const params = JSON.parse(paramsInput.value);
         
         // Update parameters with current form values
+        params.voice_provider = document.getElementById('voice_provider').value;
         params.language = document.getElementById('language').value;
-        params.host_gender = document.getElementById('host_gender').value;
-        params.guest_gender = document.getElementById('guest_gender').value;
+        params.host_voice = document.getElementById('host_voice').value;
+        params.guest_voice = document.getElementById('guest_voice').value;
         
         // Update the hidden input
         paramsInput.value = JSON.stringify(params);
