@@ -295,7 +295,7 @@ def generate_podcast():
             app.logger.info(f'Synthesizing audio with host: {host_name}, guest: {final_guest_name}, language: {language}')
             
             # Synthesize audio from provided script
-            audio_file_path, transcript, vtt_file_path, h5p_file_path = synthesize_audio_from_script(
+            audio_file_path, transcript, vtt_file_path, h5p_file_path, host_channel_path, guest_channel_path = synthesize_audio_from_script(
                 script_content,
                 language,
                 host_name,
@@ -309,7 +309,7 @@ def generate_podcast():
         else:
             # Generate podcast using existing core function
             app.logger.info('Starting podcast generation...')
-            audio_file_path, transcript, vtt_file_path, h5p_file_path = generate_podcast_core(
+            audio_file_path, transcript, vtt_file_path, h5p_file_path, host_channel_path, guest_channel_path = generate_podcast_core(
                 files=uploaded_files,
                 url=url,
                 question=question,
@@ -375,6 +375,33 @@ def generate_podcast():
                 app.logger.error(f'Failed to move H5P file: {e}')
                 h5p_filename = None
 
+        # Move separate channel files to static folder
+        host_channel_filename = None
+        guest_channel_filename = None
+        if host_channel_path and audio_filename:
+            host_channel_filename = audio_filename.replace('.mp3', '_host.mp3')
+            final_host_channel_path = os.path.join(app.config['AUDIO_FOLDER'], host_channel_filename)
+            
+            try:
+                shutil.copy2(host_channel_path, final_host_channel_path)
+                os.remove(host_channel_path)  # Clean up the original temp file
+                app.logger.info(f'Host channel file saved: {host_channel_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move host channel file: {e}')
+                host_channel_filename = None
+
+        if guest_channel_path and audio_filename:
+            guest_channel_filename = audio_filename.replace('.mp3', '_guest.mp3')
+            final_guest_channel_path = os.path.join(app.config['AUDIO_FOLDER'], guest_channel_filename)
+            
+            try:
+                shutil.copy2(guest_channel_path, final_guest_channel_path)
+                os.remove(guest_channel_path)  # Clean up the original temp file
+                app.logger.info(f'Guest channel file saved: {guest_channel_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move guest channel file: {e}')
+                guest_channel_filename = None
+
         # Clean up uploaded files
         for file_path in uploaded_files:
             try:
@@ -394,6 +421,8 @@ def generate_podcast():
                                  audio_file=audio_filename,
                                  vtt_file=vtt_filename,
                                  h5p_file=h5p_filename,
+                                 host_channel_file=host_channel_filename,
+                                 guest_channel_file=guest_channel_filename,
                                  transcript=transcript,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES,
@@ -653,7 +682,7 @@ def synthesize_audio():
         from podcast_generator import synthesize_audio_from_script
         
         # Synthesize audio from edited script
-        audio_file_path, transcript, vtt_file_path, h5p_file_path = synthesize_audio_from_script(
+        audio_file_path, transcript, vtt_file_path, h5p_file_path, host_channel_path, guest_channel_path = synthesize_audio_from_script(
             edited_script,
             generation_params['language'],
             generation_params['host_name'],
@@ -711,6 +740,33 @@ def synthesize_audio():
                 app.logger.error(f'Failed to move H5P file: {e}')
                 h5p_filename = None
 
+        # Move separate channel files to static folder
+        host_channel_filename = None
+        guest_channel_filename = None
+        if host_channel_path and audio_filename:
+            host_channel_filename = audio_filename.replace('.mp3', '_host.mp3')
+            final_host_channel_path = os.path.join(app.config['AUDIO_FOLDER'], host_channel_filename)
+            
+            try:
+                shutil.copy2(host_channel_path, final_host_channel_path)
+                os.remove(host_channel_path)  # Clean up the original temp file
+                app.logger.info(f'Host channel file saved: {host_channel_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move host channel file: {e}')
+                host_channel_filename = None
+
+        if guest_channel_path and audio_filename:
+            guest_channel_filename = audio_filename.replace('.mp3', '_guest.mp3')
+            final_guest_channel_path = os.path.join(app.config['AUDIO_FOLDER'], guest_channel_filename)
+            
+            try:
+                shutil.copy2(guest_channel_path, final_guest_channel_path)
+                os.remove(guest_channel_path)  # Clean up the original temp file
+                app.logger.info(f'Guest channel file saved: {guest_channel_filename}')
+            except (PermissionError, OSError) as e:
+                app.logger.error(f'Failed to move guest channel file: {e}')
+                guest_channel_filename = None
+
         # Log completion time
         end_time = datetime.now()
         duration = (end_time - start_time).total_seconds()
@@ -722,6 +778,8 @@ def synthesize_audio():
                                  audio_file=audio_filename,
                                  vtt_file=vtt_filename,
                                  h5p_file=h5p_filename,
+                                 host_channel_file=host_channel_filename,
+                                 guest_channel_file=guest_channel_filename,
                                  transcript=transcript,
                                  title=APP_TITLE,
                                  examples=UI_EXAMPLES,

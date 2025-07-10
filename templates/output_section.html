@@ -38,6 +38,28 @@
             </a>
             {% endif %}
           </div>
+          {% if host_channel_file or guest_channel_file %}
+          <div class="mt-4 text-center space-x-4">
+            <p class="text-sm text-gray-400 mb-2">📹 Separate Audio Channels for Video Avatar Generation:</p>
+            {% if host_channel_file %}
+            <a href="{{ url_for('static', filename='audio/' + host_channel_file) }}" download class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-orange-600 hover:bg-orange-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-orange-500">
+              <svg class="mr-2 -ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              Download Host Channel
+            </a>
+            {% endif %}
+            {% if guest_channel_file %}
+            <a href="{{ url_for('static', filename='audio/' + guest_channel_file) }}" download class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+              <svg class="mr-2 -ml-1 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+              </svg>
+              Download Guest Channel
+            </a>
+            {% endif %}
+          </div>
+          {% endif %}
+          </div>
           {% else %}
           <div class="text-center text-gray-400 py-8">
             <svg class="mx-auto size-12 text-gray-500 mb-4 w-12 h-12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

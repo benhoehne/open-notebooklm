@@ -47,6 +47,58 @@ from h5p_generator import generate_h5p_package
 from pydub import AudioSegment
 
 
+def generate_separate_channels(audio_segments, dialogue_items, speaker_names):
+    """
+    Generate separate audio tracks for each speaker with proper timing/pauses.
+    
+    Args:
+        audio_segments: List of AudioSegment objects for each dialogue line
+        dialogue_items: List of dialogue items with speaker and text info
+        speaker_names: Dict mapping speaker roles to actual names (e.g., {'host': 'Sam', 'guest': 'Alex'})
+    
+    Returns:
+        tuple: (host_channel, guest_channel) - AudioSegment objects for each speaker
+    """
+    if len(audio_segments) != len(dialogue_items):
+        raise ValueError("Number of audio segments must match number of dialogue items")
+    
+    host_segments = []
+    guest_segments = []
+    
+    # Get speaker names for comparison
+    host_name = speaker_names.get('host', 'Sam')
+    guest_name = speaker_names.get('guest', 'Alex')
+    
+    logger.info(f"Creating separate channels for host: {host_name}, guest: {guest_name}")
+    
+    for i, (segment, dialogue_item) in enumerate(zip(audio_segments, dialogue_items)):
+        speaker = dialogue_item['speaker']
+        segment_duration = len(segment)  # Duration in milliseconds
+        
+        # Create silence segment of the same duration
+        silence = AudioSegment.silent(duration=segment_duration)
+        
+        # Determine which speaker this segment belongs to
+        if speaker == host_name:
+            # Host is speaking - add audio to host channel, silence to guest channel
+            host_segments.append(segment)
+            guest_segments.append(silence)
+            logger.debug(f"Segment {i+1}: Host speaking ({segment_duration}ms)")
+        else:
+            # Guest is speaking - add audio to guest channel, silence to host channel
+            host_segments.append(silence)
+            guest_segments.append(segment)
+            logger.debug(f"Segment {i+1}: Guest speaking ({segment_duration}ms)")
+    
+    # Combine all segments for each speaker
+    host_channel = sum(host_segments) if host_segments else AudioSegment.empty()
+    guest_channel = sum(guest_segments) if guest_segments else AudioSegment.empty()
+    
+    logger.info(f"Generated separate channels - Host: {len(host_channel)}ms, Guest: {len(guest_channel)}ms")
+    
+    return host_channel, guest_channel
+
+
 def generate_podcast(
     files: List[str],
     url: Optional[str],
@@ -59,7 +111,7 @@ def generate_podcast(
     voice_provider: str = "google_tts",
     host_voice: str = "random",
     guest_voice: str = "random"
-) -> Tuple[str, str, str, str]:
+) -> Tuple[str, str, str, str, str, str]:
     """Generate the audio and transcript from the PDFs and/or URL."""
 
     text = ""
@@ -236,6 +288,10 @@ def generate_podcast(
     # Concatenate all audio segments
     combined_audio = sum(audio_segments)
 
+    # Generate separate channels for each speaker
+    speaker_names = {'host': host_name, 'guest': llm_output.name_of_guest}
+    host_channel, guest_channel = generate_separate_channels(audio_segments, dialogue_items, speaker_names)
+
     # Export the combined audio to a temporary file
     temporary_directory = GRADIO_CACHE_DIR
     try:
@@ -252,6 +308,19 @@ def generate_podcast(
         combined_audio.export(temp_file_path, format="mp3")
     except (PermissionError, OSError) as e:
         raise ValueError(f"Permission denied: Unable to create audio file '{temp_file_path}'. Please ensure the application has write permissions: {e}")
+    
+    # Export separate channel files
+    host_channel_path = temp_file_path.replace('.mp3', '_host.mp3')
+    guest_channel_path = temp_file_path.replace('.mp3', '_guest.mp3')
+    
+    try:
+        host_channel.export(host_channel_path, format="mp3")
+        guest_channel.export(guest_channel_path, format="mp3")
+        logger.info(f"Generated separate channel files: {host_channel_path}, {guest_channel_path}")
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Failed to create separate channel files: {e}")
+        host_channel_path = None
+        guest_channel_path = None
 
     # Generate VTT file
     vtt_content = generate_vtt_content(dialogue_items, audio_segments)
@@ -296,7 +365,7 @@ def generate_podcast(
 
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temp_file_path, transcript, vtt_file_path, h5p_file_path
+    return temp_file_path, transcript, vtt_file_path, h5p_file_path, host_channel_path, guest_channel_path
 
 
 def generate_script_only(
@@ -429,7 +498,7 @@ def synthesize_audio_from_script(
     voice_provider: str = "google_tts",
     host_voice: str = "random",
     guest_voice: str = "random"
-) -> Tuple[str, str, str, str]:
+) -> Tuple[str, str, str, str, str, str]:
     """Synthesize audio from an edited script."""
     
     # Clear voice cache to ensure fresh voice assignments for this podcast
@@ -570,17 +639,6 @@ def synthesize_audio_from_script(
     # Concatenate all audio segments
     combined_audio = sum(audio_segments)
 
-    # Export the combined audio to a temporary file
-    temporary_directory = GRADIO_CACHE_DIR
-    os.makedirs(temporary_directory, exist_ok=True)
-
-    # Use a more robust approach for creating temporary files on Synology
-    unique_filename = f"podcast_{uuid.uuid4().hex}.mp3"
-    temp_file_path = os.path.join(temporary_directory, unique_filename)
-    
-    # Export directly to the specified path
-    combined_audio.export(temp_file_path, format="mp3")
-
     # Generate VTT file - create dialogue items with proper speaker names for VTT
     vtt_dialogue_items = []
     for item in dialogue_items:
@@ -595,6 +653,35 @@ def synthesize_audio_from_script(
             'text': item['text']
         })
     
+    # Generate separate channels for each speaker
+    speaker_names = {'host': host_name, 'guest': guest_name}
+    # Use VTT dialogue items with proper speaker names for separate channels
+    host_channel, guest_channel = generate_separate_channels(audio_segments, vtt_dialogue_items, speaker_names)
+
+    # Export the combined audio to a temporary file
+    temporary_directory = GRADIO_CACHE_DIR
+    os.makedirs(temporary_directory, exist_ok=True)
+
+    # Use a more robust approach for creating temporary files on Synology
+    unique_filename = f"podcast_{uuid.uuid4().hex}.mp3"
+    temp_file_path = os.path.join(temporary_directory, unique_filename)
+    
+    # Export directly to the specified path
+    combined_audio.export(temp_file_path, format="mp3")
+    
+    # Export separate channel files
+    host_channel_path = temp_file_path.replace('.mp3', '_host.mp3')
+    guest_channel_path = temp_file_path.replace('.mp3', '_guest.mp3')
+    
+    try:
+        host_channel.export(host_channel_path, format="mp3")
+        guest_channel.export(guest_channel_path, format="mp3")
+        logger.info(f"Generated separate channel files: {host_channel_path}, {guest_channel_path}")
+    except (PermissionError, OSError) as e:
+        logger.warning(f"Failed to create separate channel files: {e}")
+        host_channel_path = None
+        guest_channel_path = None
+
     vtt_content = generate_vtt_content(vtt_dialogue_items, audio_segments)
     vtt_file_path = temp_file_path.replace('.mp3', '.vtt')
     
@@ -629,4 +716,4 @@ def synthesize_audio_from_script(
 
     logger.info(f"Generated {total_characters} characters of audio")
 
-    return temp_file_path, transcript, vtt_file_path, h5p_file_path
+    return temp_file_path, transcript, vtt_file_path, h5p_file_path, host_channel_path, guest_channel_path
