@@ -290,7 +290,7 @@ def generate_podcast():
             from podcast_generator import synthesize_audio_from_script
             
             # Use provided guest name or extract from script
-            final_guest_name = guest_name if guest_name else "AI Assistant"
+            final_guest_name = guest_name if guest_name else "Max"
             
             app.logger.info(f'Synthesizing audio with host: {host_name}, guest: {final_guest_name}, language: {language}')
             
@@ -555,7 +555,7 @@ def generate_script_only():
             generation_params = {
                 'language': language,
                 'host_name': host_name,
-                'guest_name': guest_name if guest_name else "AI Assistant",
+                'guest_name': guest_name if guest_name else "Max",
                 'length': length,
                 'voice_provider': voice_provider,
                 'host_voice': host_voice,
@@ -644,7 +644,7 @@ def script_editor():
     generation_params = {
         'language': 'English',
         'host_name': 'Sam',
-        'guest_name': 'AI Assistant',
+        'guest_name': 'Max',
         'voice_provider': 'google_tts',
         'host_voice': 'random',
         'guest_voice': 'random'
@@ -678,6 +678,12 @@ def synthesize_audio():
         import json
         generation_params = json.loads(generation_params_json)
         
+        # Get form values for host and guest names (these take precedence over generation_params)
+        host_name = request.form.get('host_name', '').strip() or generation_params.get('host_name', 'Sam')
+        guest_name = request.form.get('guest_name', '').strip() or generation_params.get('guest_name', 'AI Assistant')
+        
+        app.logger.info(f'Audio synthesis with host: {host_name}, guest: {guest_name}')
+        
         # Import the audio synthesis function
         from podcast_generator import synthesize_audio_from_script
         
@@ -685,8 +691,8 @@ def synthesize_audio():
         audio_file_path, transcript, vtt_file_path, h5p_file_path, host_channel_path, guest_channel_path = synthesize_audio_from_script(
             edited_script,
             generation_params['language'],
-            generation_params['host_name'],
-            generation_params['guest_name'],
+            host_name,
+            guest_name,
             generation_params.get('voice_provider', 'google_tts'),
             generation_params.get('host_voice', 'random'),
             generation_params.get('guest_voice', 'random')

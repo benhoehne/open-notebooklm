@@ -26,7 +26,19 @@
                 <p class="text-sm text-gray-400">Customize the language and voices of your podcast hosts.</p>
             </div>
             
-            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                <!-- Host Name -->
+                <div>
+                    <label for="host_name" class="block text-sm font-medium text-white mb-2">Host Name</label>
+                    <input type="text" id="host_name" name="host_name" class="w-full rounded-md bg-white/5 py-2 px-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500" placeholder="Sam">
+                </div>
+
+                <!-- Guest Name -->
+                <div>
+                    <label for="guest_name" class="block text-sm font-medium text-white mb-2">Guest Name</label>
+                    <input type="text" id="guest_name" name="guest_name" class="w-full rounded-md bg-white/5 py-2 px-3 text-base text-white outline-1 -outline-offset-1 outline-white/10 focus:outline-2 focus:-outline-offset-2 focus:outline-indigo-500" placeholder="Max">
+                </div>
+
                 <!-- Voice Provider -->
                 <div>
                     <label for="voice_provider" class="block text-sm font-medium text-white mb-2">Voice Provider</label>
@@ -112,7 +124,7 @@
 
             <!-- Script Upload Section (only show if script is empty) -->
             <div id="script-upload-section" class="mb-6" style="display: none;">
-                <div class="flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-8">
+                <div id="drop-zone" class="flex justify-center rounded-lg border border-dashed border-white/25 px-6 py-8 transition-colors duration-200 hover:border-white/40">
                     <div class="text-center">
                         <svg class="mx-auto size-10 text-gray-500" fill="currentColor" viewBox="0 0 20 20">
                             <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM6.293 6.707a1 1 0 010-1.414l3-3a1 1 0 011.414 0l3 3a1 1 0 01-1.414 1.414L11 5.414V13a1 1 0 11-2 0V5.414L7.707 6.707a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
@@ -122,7 +134,7 @@
                                 <span>Upload your script</span>
                                 <input id="script-upload" type="file" accept=".md,.txt" class="sr-only">
                             </label>
-                            <p class="pl-1">or start writing below</p>
+                            <p class="pl-1">or drag and drop here</p>
                         </div>
                         <p class="text-xs/5 text-gray-400">Markdown (.md) or text (.txt) files</p>
                     </div>
@@ -210,10 +222,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize settings from generation parameters
     initializeSettings();
     
+    // Extract names from the initial script if it exists
+    if (originalScript && originalScript.trim()) {
+        extractNamesFromScript(originalScript);
+    }
+    
     // Show upload section if script is empty
     toggleUploadSection();
     
     // Add event listeners for settings changes
+    document.getElementById('host_name').addEventListener('input', updateGenerationParams);
+    document.getElementById('guest_name').addEventListener('input', updateGenerationParams);
     document.getElementById('voice_provider').addEventListener('change', updateGenerationParams);
     document.getElementById('language').addEventListener('change', updateGenerationParams);
     document.getElementById('host_voice').addEventListener('change', updateGenerationParams);
@@ -225,6 +244,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Add event listener for script upload
     document.getElementById('script-upload').addEventListener('change', handleScriptUpload);
+    
+    // Set up drag and drop functionality
+    setupDragAndDrop();
     
     // Form submission handler
     document.getElementById('script-form').addEventListener('submit', function(e) {
@@ -350,6 +372,12 @@ function initializeSettings() {
         const params = JSON.parse(paramsInput.value);
         
         // Set the form values from generation parameters
+        if (params.host_name) {
+            document.getElementById('host_name').value = params.host_name;
+        }
+        if (params.guest_name) {
+            document.getElementById('guest_name').value = params.guest_name;
+        }
         if (params.voice_provider) {
             document.getElementById('voice_provider').value = params.voice_provider;
         }
@@ -376,6 +404,8 @@ function updateGenerationParams() {
         const params = JSON.parse(paramsInput.value);
         
         // Update parameters with current form values
+        params.host_name = document.getElementById('host_name').value || 'Sam';
+        params.guest_name = document.getElementById('guest_name').value || 'AI Assistant';
         params.voice_provider = document.getElementById('voice_provider').value;
         params.language = document.getElementById('language').value;
         params.host_voice = document.getElementById('host_voice').value;
@@ -447,6 +477,131 @@ function toggleUploadSection() {
     }
 }
 
+function extractNamesFromScript(content) {
+    try {
+        const lines = content.split('\n');
+        let hostName = null;
+        let guestName = null;
+        
+        // Look for host and guest names in the script header (before the separator)
+        for (const line of lines) {
+            const trimmedLine = line.trim();
+            
+            // Stop at separator
+            if (trimmedLine === '---') {
+                break;
+            }
+            
+            // Look for host name
+            if (trimmedLine.startsWith('**Host:**')) {
+                hostName = trimmedLine.replace('**Host:**', '').trim();
+                console.log('Extracted host name from script:', hostName);
+            }
+            
+            // Look for guest name
+            if (trimmedLine.startsWith('**Guest:**')) {
+                guestName = trimmedLine.replace('**Guest:**', '').trim();
+                console.log('Extracted guest name from script:', guestName);
+            }
+        }
+        
+        // Update form fields if names were found
+        if (hostName) {
+            document.getElementById('host_name').value = hostName;
+        }
+        if (guestName) {
+            document.getElementById('guest_name').value = guestName;
+        }
+        
+        // Update generation parameters
+        updateGenerationParams();
+        
+    } catch (error) {
+        console.error('Error extracting names from script:', error);
+    }
+}
+
+function setupDragAndDrop() {
+    const dropZone = document.getElementById('drop-zone');
+    if (!dropZone) return;
+    
+    // Prevent default drag behaviors
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+    });
+    
+    // Highlight drop zone when item is dragged over it
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropZone.addEventListener(eventName, highlight, false);
+    });
+    
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropZone.addEventListener(eventName, unhighlight, false);
+    });
+    
+    // Handle dropped files
+    dropZone.addEventListener('drop', handleDrop, false);
+    
+    function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+    }
+    
+    function highlight(e) {
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-500/10');
+        dropZone.classList.remove('border-white/25');
+    }
+    
+    function unhighlight(e) {
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+        dropZone.classList.add('border-white/25');
+    }
+    
+    function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        
+        if (files.length > 0) {
+            const file = files[0];
+            
+            // Check if it's a valid file type
+            const validTypes = ['text/markdown', 'text/plain', '.md', '.txt'];
+            const fileName = file.name.toLowerCase();
+            const isValidType = validTypes.some(type => 
+                file.type === type || fileName.endsWith(type.replace('.', ''))
+            );
+            
+            if (!isValidType) {
+                alert('Please drop only .md or .txt files.');
+                return;
+            }
+            
+            // Process the dropped file
+            processDroppedFile(file);
+        }
+    }
+    
+    function processDroppedFile(file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const content = event.target.result;
+            if (editor) {
+                editor.setValue(content);
+            } else {
+                document.getElementById('script-editor').value = content;
+            }
+            
+            // Extract host and guest names from script and update form fields
+            extractNamesFromScript(content);
+            
+            // Hide upload section after successful upload
+            toggleUploadSection();
+        };
+        reader.readAsText(file);
+    }
+}
+
 function handleScriptUpload(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -459,6 +614,9 @@ function handleScriptUpload(e) {
         } else {
             document.getElementById('script-editor').value = content;
         }
+        
+        // Extract host and guest names from script and update form fields
+        extractNamesFromScript(content);
         
         // Hide upload section after successful upload
         toggleUploadSection();
@@ -487,6 +645,9 @@ document.getElementById('import-script').addEventListener('change', function(e) 
         } else {
             document.getElementById('script-editor').value = content;
         }
+        
+        // Extract host and guest names from imported script
+        extractNamesFromScript(content);
         
         // Update upload section visibility
         toggleUploadSection();
