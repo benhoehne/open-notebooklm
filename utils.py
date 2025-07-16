@@ -200,14 +200,19 @@ def clear_voice_cache():
 
 
 def generate_podcast_audio(
-    text: str, speaker: str, language: str, voice_assignments: dict = None
+    text: str, speaker: str, language: str, voice_assignments: dict = None, voice_provider: str = "google_tts"
 ) -> str:
-    """Generate audio for podcast using the configured voice provider."""
-    from constants import get_voice_provider_setting
+    """Generate audio for podcast using the specified voice provider."""
     
-    voice_provider = get_voice_provider_setting()
+    # Convert voice_provider format from forms (google_tts -> google, elevenlabs -> elevenlabs)
+    if voice_provider == "google_tts":
+        provider = "google"
+    elif voice_provider == "elevenlabs":
+        provider = "elevenlabs"
+    else:
+        provider = "google"  # default fallback
     
-    if voice_provider == "elevenlabs":
+    if provider == "elevenlabs":
         return _use_elevenlabs_tts(text, speaker, language, voice_assignments)
     else:  # default to google
         if not google_tts_client:

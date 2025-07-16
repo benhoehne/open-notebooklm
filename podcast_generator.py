@@ -273,7 +273,7 @@ def generate_podcast(
 
         # Get audio file path
         audio_file_path = generate_podcast_audio(
-            line_text, line_speaker, language_for_tts, voice_assignments
+            line_text, line_speaker, language_for_tts, voice_assignments, voice_provider
         )
         # Read the audio file into an AudioSegment
         audio_segment = AudioSegment.from_file(audio_file_path)
@@ -630,7 +630,7 @@ def synthesize_audio_from_script(
 
         # Get audio file path
         audio_file_path = generate_podcast_audio(
-            item['text'], item['speaker'], language_for_tts, voice_assignments
+            item['text'], item['speaker'], language_for_tts, voice_assignments, voice_provider
         )
         # Read the audio file into an AudioSegment
         audio_segment = AudioSegment.from_file(audio_file_path)
